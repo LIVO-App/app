@@ -211,6 +211,7 @@ type AvailableModal =
   | "max_courses"
   | "confirmation"
   | "wrong_subscription"
+  | "unauthorized_operation"
   | "error";
 //| "general_error"; //<!-- TODO (4): put general error with refresh button
 
@@ -287,7 +288,21 @@ const changeEnrollment = async () => {
             setAlertAndOpen("error");
           }
         },
-        () => setAlertAndOpen("wrong_subscription")
+        (error) => {
+          if (error.response.status == 401) {
+            setAlertAndOpen("unauthorized_operation");
+          } else if (error.response.status == 409) {
+            let message = "";
+            if (error.response.data.specified_session) {
+              message = getCurrentElement("student_already_subscribed");
+            } else {
+              message = getCurrentElement("student_course_already_attended");
+            }
+            setAlertAndOpen("error", message);
+          } else {
+            setAlertAndOpen("wrong_subscription");
+          }
+        }
       );
     } else {
       if (!enrollment_availability.available_courses) {
@@ -327,6 +342,10 @@ const setAlertAndOpen = (
     case "wrong_subscription":
       alert_information.title = getCurrentElement("error");
       alert_information.message = getCurrentElement("wrong_subscription");
+      break;
+    case "unauthorized_operation":
+      alert_information.title = getCurrentElement("error");
+      alert_information.message = getCurrentElement("unauthorized_operation");
       break;
     case "error":
       setupError(message);
@@ -390,7 +409,13 @@ const confirm = async (outcome: boolean, time_expired = false) => {
           trigger.value++;
         }
       },
-      () => setAlertAndOpen("wrong_subscription"),
+      (error) => {
+        if (error.response.status == 401) {
+          setAlertAndOpen("unauthorized_operation");
+        } else {
+          setAlertAndOpen("wrong_subscription");
+        }
+      },
       "patch"
     );
   } catch (error) {

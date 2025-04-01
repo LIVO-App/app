@@ -216,7 +216,7 @@ class OrdinaryClass extends OrdinaryClassSummary {
             radius: true,
           },
         }
-      ), // TODO (3): mettere in content e adattare
+      ), // ! (3): mettere in content e adattare
       selected: selected,
       link:
         path != undefined
@@ -717,7 +717,8 @@ class EnrollmentCourse extends CourseSummary {
           {
             id: "section_sm",
             type: "string",
-            content: getCurrentElement("section") + ": " + (this.section ?? "-"),
+            content:
+              getCurrentElement("section") + ": " + (this.section ?? "-"),
             classes: {
               label: {
                 "ion-text-center": true,
@@ -4973,7 +4974,7 @@ class SubscriptionsManager {
                   learning_session,
                   this.mode == SubscriptionsManagerMode.SELF_SUBSCRIPTION &&
                     open_enrollment
-                    ? "/v2/students/" + // ! (3): controllare se vengono gestiti tutti gli errori, dato cambio v1->v2 senza aver controllato tutto
+                    ? "/v2/students/" +
                         student.id +
                         "/" +
                         (actual_course.pending !== false
