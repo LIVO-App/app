@@ -225,7 +225,7 @@
             :data="table_data"
             :first_row="first_row"
             :sizes="column_sizes"
-            @signal_event="setupModalAndOpen()"
+            @signal_event="setUpPendingAndOpen()"
             @execute_link="$router.push(store.state.request.url)"
           />
         </div>
@@ -234,7 +234,44 @@
         <loading-component />
       </template>
     </suspense>
-    <!-- TODO (5): Aggiungere tabella pending -->
+    <template v-if="showPending">
+      <suspense>
+        <template #default>
+          <div class="ion-padding-top">
+            <div class="ion-margin-start">
+              <ionic-element
+                :element="
+                  getCustomMessage(
+                    'pending_students',
+                    getCurrentElement('pending_students'),
+                    'title'
+                  )
+                "
+              />
+            </div>
+            <div class="ion-margin-start ion-padding-top">
+              <ionic-table
+                :key="students_trigger"
+                :emptiness_message="
+                  getCustomMessage(
+                    'emptiness_message',
+                    getCurrentElement('no_students')
+                  )
+                "
+                :data="pending_table_data"
+                :first_row="first_row"
+                :sizes="column_sizes"
+                @signal_event="setUpPendingAndOpen(true)"
+                @execute_link="$router.push(store.state.request.url)"
+              />
+            </div>
+          </div>
+        </template>
+        <template #fallback>
+          <loading-component />
+        </template>
+      </suspense>
+    </template>
   </div>
 </template>
 
@@ -276,7 +313,7 @@ import {
   toDateString,
 } from "@/utils";
 import { IonModal, IonAlert, AlertButton, IonButton } from "@ionic/vue";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "vuex";
 
@@ -296,6 +333,7 @@ type AvailableModal =
 
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
   //<!-- ! (3): una volta che si sposta qualcuno il bottone check per spostare qualcun'altro non funziona
+  //<!-- ! (3): è possibile dare voti in una sessione futura (forse problema su utilizzo sessioni rimaneggiate)
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
 
@@ -564,7 +602,9 @@ const updateStudents = async () => {
             column_sizes =
               //(user.type == "teacher" && associated_teacher == true) ||
               user.type == "admin" &&
-              project_class?.final_confirmation != undefined
+              (project_class?.final_confirmation != undefined ||
+                learning_session_status == LearningSessionStatus.CURRENT ||
+                learning_session_status == LearningSessionStatus.COMPLETED)
                 ? ["1", "6", "3", "2"]
                 : ["1", "4", "2", "1.5", "1.5", "2"];
             if (first_row.length != column_sizes.length) {
@@ -631,7 +671,40 @@ const updateStudents = async () => {
         user.type == "teacher"
           ? grades[tmp_student.id][final_grades_indexes[tmp_student.id]]
           : undefined,
-        project_class?.final_confirmation,
+        learning_session_status != LearningSessionStatus.CURRENT &&
+          learning_session_status != LearningSessionStatus.COMPLETED
+          ? project_class?.final_confirmation
+          : new Date(),
+        undefined,
+        parseInt(student_index) + 1
+      )
+    );
+  }
+};
+
+const updatePendingStudents = async () => {
+  pending_students = await executeLink(
+    "/v1/project_classes/" + course_id + "/" + session_id + "/components",
+    (response) =>
+      response.data.data.components.map(
+        (s: any) => new ProjectClassStudent(s, course_id, session_id)
+      ),
+    () => []
+  );
+
+  pending_table_data.cards[""] = [];
+  for (const student_index in pending_students) {
+    //<!-- TODO (5): controllare se ci sono più professori e fare richieste voti solamente sul pulsante (evitare problema di professore che aggiunge mentre altro è nella pagina)
+    tmp_student = pending_students[student_index];
+    pending_table_data.cards[""].push(
+      tmp_student.toTableCard(
+        undefined,
+        false,
+        undefined,
+        learning_session_status != LearningSessionStatus.CURRENT &&
+          learning_session_status != LearningSessionStatus.COMPLETED
+          ? project_class?.final_confirmation
+          : new Date(),
         undefined,
         parseInt(student_index) + 1
       )
@@ -662,6 +735,9 @@ const yes_handler = async () => {
     tmp_grade: Grade,
     outcome: Outcome,
     index: number;
+
+  const table = is_pending ? pending_table_data : table_data;
+  const list = is_pending ? pending_students : students;
 
   switch (store.state.event.event) {
     case "confirmation":
@@ -873,7 +949,6 @@ const yes_handler = async () => {
       break;
     case "remove_student":
       if (course != undefined && project_class != undefined) {
-        //<!-- TODO (5): mettere controllo contro rimozione numero minimo o parlare con Pietro per toglierlo (anche con move_student)
         if (project_class.final_confirmation != undefined) {
           setTimeout(
             () =>
@@ -892,8 +967,8 @@ const yes_handler = async () => {
               "&session_id=" +
               project_class.learning_session.id,
             () => {
-              table_data.cards[""].splice(student_index.table, 1);
-              students.splice(student_index.student_list, 1);
+              table.cards[""].splice(student_index.table, 1);
+              list.splice(student_index.student_list, 1);
               fix_indexes();
               setTimeout(
                 () =>
@@ -905,7 +980,27 @@ const yes_handler = async () => {
               );
               students_trigger.value++;
             },
-            () => setTimeout(() => setupModalAndOpen("error"), 300),
+            (e) => {
+              outcome = {
+                code: ErrorCodes.GENERIC,
+                subcode: 0,
+                message: getCurrentElement("generic_error"),
+              };
+              if (e.response != undefined) {
+                if (e.response.status == 400) {
+                  if (
+                    e.response.data.description == backend_errors.minStudents
+                  ) {
+                    outcome.subcode = 1;
+                    outcome.message = getCurrentElement("min_students_error");
+                  }
+                }
+              }
+              setTimeout(
+                () => setupModalAndOpen("error", outcome.message),
+                300
+              );
+            },
             "delete"
           );
         }
@@ -920,21 +1015,21 @@ const yes_handler = async () => {
         switch (outcome.code) {
           case SuccessCodes.GENERIC:
             index = removeTableIndexedElement(
-              table_data,
+              table,
               store.state.event.data.student_id
             );
-            if (students[index].id == store.state.event.data.student_id) {
-              students.splice(index, 1);
+            if (list[index].id == store.state.event.data.student_id) {
+              list.splice(index, 1);
             } else {
-              students.splice(
-                students.findIndex(
+              list.splice(
+                list.findIndex(
                   (a) => a.id == store.state.event.data.student_id
                 ),
                 1
               );
             }
             students_trigger.value++;
-            store.state.event.event = "student_mover";
+            closeModal("student_mover");
             setTimeout(
               () => setupModalAndOpen("success", outcome.message),
               500
@@ -962,14 +1057,14 @@ const findGrade = () => {
   );
 };
 const findStudent = () => {
+  const table = is_pending
+    ? pending_table_data.cards[""]
+    : table_data.cards[""];
+  const list = is_pending ? pending_students : students;
   const tmp_student_id = store.state.event.data.parameters.student_id;
 
-  student_index.table = table_data.cards[""].findIndex(
-    (a) => a.id == tmp_student_id
-  );
-  student_index.student_list = students.findIndex(
-    (a) => a.id == tmp_student_id
-  );
+  student_index.table = table.findIndex((a) => a.id == tmp_student_id);
+  student_index.student_list = list.findIndex((a) => a.id == tmp_student_id);
 };
 const updateFinalRefs = (
   student_id: string,
@@ -1045,14 +1140,32 @@ const moveStudent = async (
         outcome.subcode = 4;
         outcome.message = getCurrentElement("cannot_move_for_credits");
       } else {
+        outcome.message = getCurrentElement("student_moved");
         await executeLink(
           "/v1/students/" + store.state.event.data.student_id + "/move_class",
           () => {
             outcome.message = getCurrentElement("student_moved");
           },
-          () => {
+          (e) => {
             outcome.code = ErrorCodes.GENERIC;
-            outcome.subcode = 2;
+            if (e.response != undefined) {
+              if (e.response.status == 400) {
+                if (e.response.data.description == backend_errors.minStudents) {
+                  // <!-- TODO (5): aggiungere codici errore in backend
+                  outcome.subcode = 5;
+                  outcome.message = getCurrentElement("min_students_error");
+                } else if (
+                  e.response.data.description == backend_errors.maxStudents
+                ) {
+                  outcome.subcode = 6;
+                  outcome.message = getCurrentElement("max_students_error");
+                } else {
+                  outcome.subcode = 2;
+                }
+              }
+            } else {
+              outcome.subcode = 2;
+            }
           },
           "put",
           {
@@ -1077,18 +1190,21 @@ const moveStudent = async (
   return outcome;
 };
 const fix_indexes = () => {
-  for (let i = 0; i < table_data.cards[""].length; i++) {
+  const table = is_pending
+    ? pending_table_data.cards[""]
+    : table_data.cards[""];
+
+  for (let i = 0; i < table.length; i++) {
     for (const index_id of (
-      table_data.cards[""][i].linked_elements ?? {
+      table[i].linked_elements ?? {
         index: [],
       }
     ).index) {
-      table_data.cards[""][i].content[
-        table_data.cards[""][i].content.findIndex((a) => a.id == index_id)
+      table[i].content[
+        table[i].content.findIndex((a) => a.id == index_id)
       ].content = (
-        table_data.cards[""][i].content[
-          table_data.cards[""][i].content.findIndex((a) => a.id == index_id)
-        ].content as string
+        table[i].content[table[i].content.findIndex((a) => a.id == index_id)]
+          .content as string
       ).replace(/\d+/g, "" + (i + 1));
     }
   }
@@ -1097,6 +1213,20 @@ const fix_indexes = () => {
 const areAllFinals = () => {
   return Object.keys(final_grades_indexes).length == Object.keys(grades).length;
 };
+
+const setUpPendingAndOpen = (value = false) => {
+  is_pending = value;
+  setupModalAndOpen();
+};
+
+const showPending = computed(
+  () =>
+    user.type == "admin" &&
+    ((learning_session_status == LearningSessionStatus.FUTURE &&
+      learning_session?.open_day != undefined &&
+      learning_session.open_day <= new Date()) ||
+      learning_session_status == LearningSessionStatus.UPCOMING)
+);
 
 const store = useStore();
 const $router = useRouter();
@@ -1146,6 +1276,12 @@ const final_grades_indexes: {
 const alert_open = ref(false);
 const sections: { id: string }[] = [];
 const tmp_sections: Set<string> = new Set();
+const backend_errors = {
+  minStudents:
+    "The class will not have anymore the min number of students required. Please, try again.",
+  maxStudents:
+    "Too many students. You can not move the student to the destination class.",
+};
 const button_css = Object.assign(
   JSON.parse(JSON.stringify(store.state.button_css)),
   {
@@ -1247,6 +1383,12 @@ const table_data: OrderedCardsList<GeneralTableCardElements> = {
     "": [],
   },
 };
+const pending_table_data: OrderedCardsList<GeneralTableCardElements> = {
+  order: [],
+  cards: {
+    "": [],
+  },
+};
 const multiple_grades_parameters: MultipleGradesParameters = {
   course_id: parseInt(course_id),
   session_id: parseInt(session_id),
@@ -1254,10 +1396,10 @@ const multiple_grades_parameters: MultipleGradesParameters = {
   section: selected_section.value,
 };
 const course: Course = await executeLink(
-    "/v1/courses/" + course_id,
-    (response) => new Course(response.data.data),
-    () => undefined
-  );
+  "/v1/courses/" + course_id,
+  (response) => new Course(response.data.data),
+  () => undefined
+);
 
 let grades_title: string;
 let grades_parameters: SingleGradesParameters;
@@ -1267,12 +1409,14 @@ let description_course_id: number;
 let associated_teacher: boolean | undefined;
 let project_class: AdminProjectClass | undefined;
 let students: ProjectClassStudent[] = [];
+let pending_students: ProjectClassStudent[] = [];
 let tmp_student: ProjectClassStudent;
 let edits_to_send: {
   [key in keyof GradeProps]: boolean;
 };
 let column_sizes: string[] = [];
 let student_mover_data: TmpList;
+let is_pending = false;
 
 if (user.type == "teacher") {
   first_row.push(
@@ -1336,12 +1480,18 @@ if (sections.length > 0) {
 }
 
 await updateStudents();
+if (showPending.value) {
+  await updatePendingStudents();
+}
 watch(selected_section, async () => {
   await updateStudents();
   students_trigger.value++;
 });
 watch(students_update, async () => {
   await updateStudents();
+  if (showPending.value) {
+    await updatePendingStudents();
+  }
   students_trigger.value++;
 });
 </script>

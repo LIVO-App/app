@@ -3994,7 +3994,7 @@ class ModelProposition {
         },
         {
           rule: (proposition: PropositionObj) =>
-            proposition.max_students - proposition.min_students >= 4,
+            proposition.max_students - proposition.min_students >= 6, // TODO (6): Attenzione, diverso da backend. Sistemare con settings comuni
           error_message: getCurrentElement("min_max_error"),
           valid: ["propose"],
         },
@@ -4998,6 +4998,7 @@ class SubscriptionsManager {
                           course_id: actual_course.id,
                           session_id: parseInt(learning_session_id),
                           final_confirmation: actual_course.final_confirmation,
+                          section: actual_course.section,
                         },
                       }
                     : undefined,
