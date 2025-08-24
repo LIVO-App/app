@@ -43,7 +43,10 @@
             )
           "
         />
-        <ionic-element :element="buttons[0]" @execute_link="exportPropositions" />
+        <ionic-element
+          :element="buttons[0]"
+          @execute_link="exportPropositions"
+        />
       </ion-col>
     </ion-row>
     <ion-row>
@@ -496,16 +499,29 @@ const courses: OrderedCardsList<GeneralCardElements> = reactive({
 });
 const school_years: number[] =
   $route.name == "open_day_courses"
-    ? (await executeLink(
-        "/v1/teachers/" + user.id + "/tutor_years",
-        (response: any) => response.data.data.map((a: any) => a.school_year),
+    ? (
+        await executeLink(
+          "/v1/teachers/" + user.id + "/tutor_years",
+          (response: any) => response.data.data.map((a: any) => a.school_year),
+          () => []
+        )
+      ).reverse()
+    : user.type == "teacher"
+    ? (
+        await executeLink(
+          "/v1/teachers/" + user.id + "/active_years",
+          (response: any) => response.data.data.map((a: any) => a.year),
+          () => []
+        )
+      ).reverse()
+    : await executeLink(
+        "/v1/ordinary_classes?descending=true",
+        (response: any) => [
+          ...new Set(response.data.data.map((a: any) => a.school_year)),
+        ],
         () => []
-      )).reverse()
-    : (await executeLink(
-        "/v1/teachers/" + user.id + "/active_years",
-        (response: any) => response.data.data.map((a: any) => a.year),
-        () => []
-      )).reverse();
+      );
+
 const learning_areas: LearningArea[] = await executeLink(
   "/v1/learning_areas",
   (response: any) => response.data.data,
