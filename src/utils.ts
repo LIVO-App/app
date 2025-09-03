@@ -1140,10 +1140,14 @@ async function downloadCsv(data: string | Blob, filename: string) {
 
   try {
     // Check for empty data
-    if ((typeof data == "string" && data == "") || (typeof data == "object" && (data.size == 0 || data.size == undefined))) {
+    if (
+      (typeof data == "string" && data == "") ||
+      (typeof data == "object" && (data.size == 0 || data.size == undefined))
+    ) {
       return 0;
     }
-    const actual_data: Blob = typeof data == "string" ? new Blob([data], { type: "text/csv" }) : data;
+    const actual_data: Blob =
+      typeof data == "string" ? new Blob([data], { type: "text/csv" }) : data;
 
     if (Capacitor.getPlatform() == "web") {
       url = window.URL.createObjectURL(actual_data);

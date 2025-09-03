@@ -12,6 +12,7 @@
     :label="acutal_input_label"
     :aria-label="acutal_input_label"
     :color="getIonicColor(element.colors?.text)"
+    :size="element.params?.size ?? 'default'"
     fill="outline"
     :class="actual_classes.input"
     @ion-input="

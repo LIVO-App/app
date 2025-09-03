@@ -175,7 +175,7 @@
                   }
                 "
                 @keydown="
-                  ($event) => {
+                  ($event: KeyboardEvent) => {
                     if (hasGradeTypingErrors('keydown', grade, $event.key)) {
                       $event.preventDefault();
                     }
