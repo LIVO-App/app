@@ -8,6 +8,9 @@
   />
   <ion-grid
     ><!-- v-if="learning_sessions.loaded">-->
+    <ion-row v-if="$route.name == 'ordinary_classes' && user.type == 'admin'">
+      <ordinary-classes-manager @signal_event="setupModalAndOpen()" />
+    </ion-row>
     <ion-row v-if="user.type == 'admin'">
       <ionic-element
         :element="
@@ -371,7 +374,8 @@ const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
     case "success":
       alert_information.title = "";
       alert_information.message =
-        message ?? getCurrentElement(getCurrentElement("successful_operation"));
+        actual_message ??
+        getCurrentElement(getCurrentElement("successful_operation"));
       alert_information.buttons = [getCurrentElement("ok")];
       alert_open.value = true;
       break;
