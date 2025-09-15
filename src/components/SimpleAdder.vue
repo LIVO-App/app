@@ -23,7 +23,7 @@
           <div class="ion-padding-bottom">
             <slot name="parameters"></slot>
           </div>
-          <div class="ion-text-center">
+          <div v-if="props.show_confirm" class="ion-text-center">
             <ionic-element :element="buttons[0]" @signal_event="$emit('add')" />
           </div>
           <hr
@@ -91,6 +91,10 @@ const props = defineProps({
   },
   first_row: {
     type: Array<TableElement>,
+  },
+  show_confirm: {
+    type: Boolean,
+    default: true,
   },
   sizes: {
     type: [Array, Object] as PropType<

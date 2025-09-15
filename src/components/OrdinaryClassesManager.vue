@@ -434,8 +434,8 @@ const addRow = (window: availableModal) => {
         },
       },
     });
+    resetPeopleParams();
   }
-  resetPeopleParams();
   trigger.value++;
 };
 const removeRow = (window: availableModal) => {
@@ -465,6 +465,17 @@ const sendData = (window: availableModal) => {
     data = teachers_data;
   } else {
     data = students_data;
+  }
+
+  if (data.cards[""].length === 0) {
+    store.state.event = {
+      event: "error",
+      data: {
+        message: getCurrentElement(`no_${window}_to_add`),
+      },
+    };
+    emit("signal_event");
+    return;
   }
 
   return executeLink(
@@ -600,7 +611,7 @@ const resetPeopleParams = () => {
   elements.address.content = "";
 };
 const resetClassParams = () => {
-  elements.school_year.content = new Date().getFullYear() + 1;
+  elements.school_year.content = new Date().getFullYear();
   selected_study_address.value = "";
   selected_study_year.value = 0;
 };
@@ -656,7 +667,7 @@ const elements = {
   school_year: {
     id: "school_year",
     type: "input",
-    content: new Date().getFullYear() + 1,
+    content: new Date().getFullYear(),
     params: {
       type: "number",
       label: getCurrentElement("school_year"),

@@ -50,7 +50,7 @@
       />
     </div>
     <custom-select
-      v-if="sections_use"
+      v-if="sections_use && sections.length > 0"
       v-model:selected_option="selected_section"
       :list="sections"
       :label="getCurrentElement('section') + ':'"
@@ -58,7 +58,7 @@
       :placeholder="getCurrentElement('section_choice')"
     />
     <custom-select
-      v-if="user.type == 'admin'"
+      v-if="user.type == 'admin' && learning_sessions.length > 0"
       v-model:selected_option="selected_session"
       :list="learning_sessions"
       :label="getCurrentElement('learning_sessions') + ':'"
@@ -66,81 +66,37 @@
       :placeholder="getCurrentElement('learning_sessions_choice')"
       :getCompleteName="LearningSession.toString"
     />
-    <template v-if="user.type == 'admin'">
-      <ionic-element
-        :element="
-          getCustomMessage(
-            'title',
-            getCurrentElement('non_compliant_students'),
-            'title',
-            undefined,
-            {
-              label: {
-                'ion-padding': true,
-              },
-            }
-          )
+    <div
+      v-if="user.type == 'admin' && learning_sessions.length > 0"
+      style="display: flex"
+    >
+      <ordinary-class-people-adder
+        :school_year="ordinary_class.school_year"
+        :study_address="ordinary_class.address"
+        :study_year="ordinary_class.study_year"
+        :section="selected_section"
+        @signal_event="
+          () => {
+            setupModalAndOpen();
+            updateStudents(true, false, true).then(() => students_trigger++);
+          }
         "
       />
-      <suspense>
-        <template #default>
-          <ionic-table
-            :key="students_trigger"
-            :data="non_compliant_table"
-            :first_row="non_compliant_first_row"
-            :sizes="non_compliant_column_sizes"
-            :emptiness_message="
-              getCustomMessage(
-                'emptiness_message',
-                getCurrentElement('all_compliant_students'),
-                'string',
-                undefined,
-                {
-                  label: {
-                    'ion-padding': true,
-                  },
-                }
-              )
-            "
-            @signal_event="setupModalAndOpen()"
-            @execute_link="$router.push(store.state.request.url)"
-          />
-        </template>
-        <template #fallback>
-          <loading-component />
-        </template>
-      </suspense>
-    </template>
-    <ionic-element
-      :element="
-        getCustomMessage(
-          'title',
-          getCurrentElement(
-            user.type == 'admin' ? 'compliant_students' : 'students'
-          ),
-          'title',
-          undefined,
-          {
-            label: {
-              'ion-padding': true,
-            },
-          }
-        )
+    </div>
+    <template
+      v-if="
+        non_compliant_table.cards[''].length > 0 ||
+        students_table.cards[''].length > 0
       "
-    />
-    <suspense>
-      <template #default>
+    >
+      <template v-if="user.type == 'admin'">
         <div class="ion-padding-top">
-          <ionic-table
-            :key="students_trigger"
-            :data="students_table"
-            :first_row="students_first_row"
-            :sizes="students_column_sizes"
-            :emptiness_message="
+          <ionic-element
+            :element="
               getCustomMessage(
-                'emptiness_message',
-                getCurrentElement('no_compliant_students'),
-                'string',
+                'title',
+                getCurrentElement('non_compliant_students'),
+                'title',
                 undefined,
                 {
                   label: {
@@ -149,15 +105,97 @@
                 }
               )
             "
-            @signal_event="setupModalAndOpen()"
-            @execute_link="$router.push(store.state.request.url)"
           />
+          <suspense>
+            <template #default>
+              <div class="ion-padding-top">
+                <ionic-table
+                  :key="students_trigger"
+                  :data="non_compliant_table"
+                  :first_row="non_compliant_first_row"
+                  :sizes="non_compliant_column_sizes"
+                  :emptiness_message="
+                    getCustomMessage(
+                      'emptiness_message',
+                      getCurrentElement('all_compliant_students'),
+                      'string',
+                      undefined,
+                      {
+                        label: {
+                          'ion-padding': true,
+                        },
+                      }
+                    )
+                  "
+                  @signal_event="setupModalAndOpen()"
+                  @execute_link="$router.push(store.state.request.url)"
+                />
+              </div>
+            </template>
+            <template #fallback>
+              <loading-component />
+            </template>
+          </suspense>
         </div>
       </template>
-      <template #fallback>
-        <loading-component />
-      </template>
-    </suspense>
+      <div class="ion-padding-top">
+        <ionic-element
+          :element="
+            getCustomMessage(
+              'title',
+              getCurrentElement(
+                user.type == 'admin' ? 'compliant_students' : 'students'
+              ),
+              'title',
+              undefined,
+              {
+                label: {
+                  'ion-padding': true,
+                },
+              }
+            )
+          "
+        />
+        <suspense>
+          <template #default>
+            <div class="ion-padding-top">
+              <ionic-table
+                :key="students_trigger"
+                :data="students_table"
+                :first_row="students_first_row"
+                :sizes="students_column_sizes"
+                :emptiness_message="
+                  getCustomMessage(
+                    'emptiness_message',
+                    getCurrentElement('no_compliant_students'),
+                    'string',
+                    undefined,
+                    {
+                      label: {
+                        'ion-padding': true,
+                      },
+                    }
+                  )
+                "
+                @signal_event="setupModalAndOpen()"
+                @execute_link="$router.push(store.state.request.url)"
+              />
+            </div>
+          </template>
+          <template #fallback>
+            <loading-component />
+          </template>
+        </suspense>
+      </div>
+    </template>
+    <div v-else class="ion-padding-start ion-padding-top">
+      <ionic-element
+        :element="
+          getCustomMessage('no_students', getCurrentElement('no_students'))
+        "
+      />
+    </div>
+    <!-- TODO (4): Togliere studenti andati via dalla scuola (facendo in modo che non vengano visualizzati in giro). -->
   </div>
 </template>
 
@@ -187,6 +225,7 @@ import {
   executeLink,
   getCurrentElement,
   getCustomMessage,
+  getIcon,
   removeTableIndexedElement,
   setupError,
 } from "@/utils";
@@ -633,24 +672,26 @@ if (
     },
     () => []
   );
-  selected_session.value = learning_sessions[learning_sessions.length - 1].id;
-  learning_session = learning_sessions.find(
-    (a) => a.id == selected_session.value
-  );
-
-  await updateStudents(user.type == "admin");
-  watch(selected_session, async () => {
+  if (learning_sessions.length > 0) {
+    selected_session.value = learning_sessions[learning_sessions.length - 1].id;
     learning_session = learning_sessions.find(
       (a) => a.id == selected_session.value
     );
+
     await updateStudents(user.type == "admin");
-    students_trigger.value++;
-  });
-  watch(selected_section, async () => {
-    ordinary_class.section = selected_section.value;
-    await updateStudents(user.type == "admin");
-    students_trigger.value++;
-  });
+    watch(selected_session, async () => {
+      learning_session = learning_sessions.find(
+        (a) => a.id == selected_session.value
+      );
+      await updateStudents(user.type == "admin");
+      students_trigger.value++;
+    });
+    watch(selected_section, async () => {
+      ordinary_class.section = selected_section.value;
+      await updateStudents(user.type == "admin");
+      students_trigger.value++;
+    });
+  }
 } else {
   $router.push({ name: "ordinary_classes" }); //<!-- TODO (6): valutare se va bene o mettere solo popup e fare dappertutto
 }

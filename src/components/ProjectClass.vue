@@ -332,7 +332,6 @@ type AvailableModal =
   | "error";
 
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
-  //<!-- ! (3): una volta che si sposta qualcuno il bottone check per spostare qualcun'altro non funziona
   //<!-- ! (3): è possibile dare voti in una sessione futura (forse problema su utilizzo sessioni rimaneggiate)
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
