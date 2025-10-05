@@ -300,7 +300,7 @@ const addRow = (window: availableModal) => {
           studyAddressToString(
             study_addresses.find(
               (address) => address.id === selected_study_address.value
-            )!
+            ) as StudyAddress
           )
         ),
         getCustomMessage("school_year", elements.school_year.content),
@@ -552,13 +552,14 @@ const sendData = (window: availableModal) => {
           [key: string]: any;
         } = {};
 
-        let element: paramElement;
+        let element: paramElement, content_list: CustomElement[];
 
         for (let i = 0; i < to_send[window].params.length; i++) {
           element = to_send[window].params[i];
+          content_list = card.content as CustomElement[];
           post_data[element.name] = element.map_fn
-            ? element.map_fn(card.content![i].content as string)
-            : card.content![i].content;
+            ? element.map_fn(content_list[i].content as string)
+            : content_list[i].content;
         }
 
         return post_data;
@@ -712,9 +713,11 @@ const teacher_student_params: paramElement[] = [
     map_fn: (v) => {
       const value = getValueNoTitle(v);
       if (value) {
-        return genders.find(
-          (gender) => getCurrentElement(GenderKeys[gender.id]) === value
-        )!.id;
+        return (
+          genders.find(
+            (gender) => getCurrentElement(GenderKeys[gender.id]) === value
+          ) as { id: Gender }
+        ).id;
       } else {
         return undefined;
       }
@@ -746,8 +749,11 @@ const to_send: {
       {
         name: "study_address",
         map_fn: (v) =>
-          study_addresses.find((address) => address[`${language}_title`] === v)!
-            .id,
+          (
+            study_addresses.find(
+              (address) => address[`${language}_title`] === v
+            ) as StudyAddress
+          ).id,
       },
       {
         name: "school_year",

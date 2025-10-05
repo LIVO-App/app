@@ -270,7 +270,7 @@ const addRow = (window: availableModal | "teachings") => {
       (t) =>
         "" + t.id ===
         available_teachers.cards[""][selected_teacher_indexes.value].id
-    )!;
+    ) as Teacher;
     if (
       teachers_data.cards[""].find(
         (card) => card.id === teacher.id.toString()
@@ -314,10 +314,13 @@ const addRow = (window: availableModal | "teachings") => {
             teaching_data.cards[""]
               .map(
                 (card) =>
-                  teachings.find(
-                    (teaching) =>
-                      teaching[`${language}_title`] === card.content![0].content
-                  )!.id
+                  (
+                    teachings.find(
+                      (teaching) =>
+                        teaching[`${language}_title`] ===
+                        (card.content as CustomElement[])[0].content
+                    ) as Teaching
+                  ).id
               )
               .join(", ")
         ),
@@ -569,12 +572,14 @@ const sendData = (window: availableModal) => {
       ? {
           teacher_list: teachers_data.cards[""].map((card) => ({
             id: parseInt(card.id),
-            coordinator: (card.content![3].content as string).includes(
-              getCurrentElement("yes")
-            )
+            coordinator: (
+              (card.content as CustomElement[])[3].content as string
+            ).includes(getCurrentElement("yes"))
               ? 1
               : 0,
-            teaching_list: (card.content![4].content as string)
+            teaching_list: (
+              (card.content as CustomElement[])[4].content as string
+            )
               .split(":")[1]
               .split(",")
               .map((id) => id.trim()),
@@ -601,7 +606,7 @@ const changeFilter = (
   for (const element of all_data) {
     if (
       new_filter === "" ||
-      (element.content![0].content as string)
+      ((element.content as CustomElement[])[0].content as string)
         .toLowerCase()
         .includes(lower_filter)
     ) {

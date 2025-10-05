@@ -43,7 +43,6 @@ import {
   Layout,
   GeneralCardSubElements,
   BreakpointScope,
-  LearningSession,
 } from "./types";
 import { $axios } from "./plugins/axios";
 import { store } from "./store";
@@ -1295,22 +1294,23 @@ function getCardValues(
     );
   }
 
-  let attributes_values: string[], actual_value: string;
+  let attributes_values: string[],
+    actual_value: string,
+    content_list: CustomElement[];
 
   for (const key in attributes_to_update_map) {
-    attributes_values = table_card
-      .content!.filter((element) =>
-        attributes_to_update_map[key].includes(element.id)
-      )
+    content_list = table_card.content as CustomElement[];
+    attributes_values = content_list
+      .filter((element) => attributes_to_update_map[key].includes(element.id))
       .map((element) => element.content as string);
     if (attributes_values.every((val) => val === attributes_values[0])) {
       actual_value = attributes_values[0];
     } else {
-      actual_value = (table_card.content!.find(
+      actual_value = (content_list.find(
         (element) =>
           element.id == attributes_templates[key](actual_breakpoint, id)
       )?.content ??
-        table_card.content!.find(
+        content_list.find(
           (element) => element.id == attributes_templates[key]("", id)
         )?.content) as string;
     }

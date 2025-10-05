@@ -225,7 +225,6 @@ import {
   executeLink,
   getCurrentElement,
   getCustomMessage,
-  getIcon,
   removeTableIndexedElement,
   setupError,
 } from "@/utils";
