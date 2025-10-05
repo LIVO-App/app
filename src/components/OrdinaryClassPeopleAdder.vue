@@ -617,20 +617,14 @@ const changeFilter = (
 const find_element = (
   list: OrderedCardsList<GeneralCardElements>,
   id?: string
-): number => {
-  let count = 0;
-  let index: number;
-
-  index = list.cards[""].findIndex((a: GeneralCardElements) => {
+): number =>
+  list.cards[""].findIndex((a: GeneralCardElements) => {
     if (id != undefined) {
       return a.id == id;
     } else {
       return a.selected;
     }
   });
-
-  return index;
-};
 const selectTeacher = () => {
   if (selected_teacher_indexes.value != -1) {
     selectedChange(available_teachers);

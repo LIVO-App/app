@@ -46,6 +46,7 @@ import ImageCarousel from "./components/ImageCarousel.vue";
 import SimpleAdder from "./components/SimpleAdder.vue";
 import OrdinaryClassesManager from "./components/OrdinaryClassesManager.vue";
 import OrdinaryClassPeopleAdder from "./components/OrdinaryClassPeopleAdder.vue";
+import LearningSessionsManager from "./components/LearningSessionsManager.vue";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/vue/css/core.css";
@@ -116,7 +117,8 @@ const app = createApp(App)
   .component("ImageCarousel", ImageCarousel)
   .component("SimpleAdder", SimpleAdder)
   .component("OrdinaryClassesManager", OrdinaryClassesManager)
-  .component("OrdinaryClassPeopleAdder", OrdinaryClassPeopleAdder);
+  .component("OrdinaryClassPeopleAdder", OrdinaryClassPeopleAdder)
+  .component("LearningSessionsManager", LearningSessionsManager);
 
 router.isReady().then(() => {
   app.mount("#app");

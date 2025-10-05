@@ -2,14 +2,17 @@ import { Method } from "axios";
 import { store } from "./store";
 import { AlertButton, AlertInput } from "@ionic/vue";
 import {
+  dateStringToDate,
   executeLink,
   getActualLearningContext,
+  getCardValues,
   getCompleteSchoolYear,
   getCssColor,
   getCurrentElement,
   getCurrentLanguage,
   getCurrentSchoolYear,
   getCustomMessage,
+  getDateStringToSend,
   getGender,
   getIcon,
   getRagneString,
@@ -18,6 +21,7 @@ import {
   getStudyAddressVisualization,
   getSubscribedCredits,
   isLinkedToAreas,
+  isSmaller,
   numberToSection,
   toDateString,
 } from "./utils";
@@ -1465,15 +1469,21 @@ class Course extends CourseBase {
   }
 }
 
-type LearningSessionProps = {
-  id: number;
-  number: number;
-  school_year: number;
+type LearningSessionUpdateProps = {
   start: string;
   end: string;
   num_groups: number;
   open_day: string;
 };
+
+type LearningSessionCreateProps = {
+  number: number;
+  school_year: number;
+} & LearningSessionUpdateProps;
+
+type LearningSessionProps = {
+  id: number;
+} & LearningSessionCreateProps;
 
 class LearningSessionSummary {
   id: number;
@@ -1494,21 +1504,69 @@ class LearningSession extends LearningSessionSummary {
   end: Date;
   num_groups: number;
   open_day: Date;
+  private static attributes_to_update_templates: {
+    [key: string]: (breakpoint: Breakpoint | "", id: number) => string;
+  } = {
+    start: (breakpoint: Breakpoint | "", id: number) =>
+      `start${LearningSession.getBreakpointTableElement(breakpoint)}_${id}`,
+    end: (breakpoint: Breakpoint | "", id: number) =>
+      `end${LearningSession.getBreakpointTableElement(breakpoint)}_${id}`,
+    num_groups: (breakpoint: Breakpoint | "", id: number) => {
+      id;
+      return `groups${LearningSession.getBreakpointTableElement(breakpoint)}`;
+    },
+    open_day: (breakpoint: Breakpoint | "", id: number) =>
+      `open_day${LearningSession.getBreakpointTableElement(breakpoint)}_${id}`,
+  }; // LearningSessionUpdateProps
+  private static attributes_templates: {
+    [key: string]: (breakpoint: Breakpoint | "") => string;
+  } = {
+    number: (breakpoint: Breakpoint | "") =>
+      breakpoint != "" ? "number_school_year" : "number",
+    school_year: (breakpoint: Breakpoint | "") =>
+      breakpoint != "" ? "number_school_year" : "school_year",
+    ...LearningSession.attributes_to_update_templates,
+  }; // LearningSessionProps
 
   constructor(sessionObj: LearningSessionProps) {
     super(sessionObj);
+
     this.start = new Date(sessionObj.start);
     this.end = new Date(sessionObj.end);
     this.num_groups = sessionObj.num_groups;
     this.open_day = new Date(sessionObj.open_day);
   }
 
-  toString() {
-    return this.number + " - " + this.school_year;
+  static copy(session: LearningSession) {
+    return new LearningSession({
+      id: session.id,
+      number: session.number,
+      school_year: session.school_year,
+      start: session.start.toISOString(),
+      end: session.end.toISOString(),
+      num_groups: session.num_groups,
+      open_day: session.open_day.toISOString(),
+    });
   }
 
-  static toString(session: LearningSession) {
-    return session.number + " - " + session.school_year;
+  toString(full_school_year = false) {
+    return (
+      this.number +
+      " - " +
+      (full_school_year
+        ? this.school_year + "-" + (this.school_year + 1)
+        : this.school_year)
+    );
+  }
+
+  static toString(session: LearningSession, full_school_year = false) {
+    return (
+      session.number +
+      " - " +
+      (full_school_year
+        ? session.school_year + "-" + (session.school_year + 1)
+        : session.school_year)
+    );
   }
 
   getStatus(reference = new Date()) {
@@ -1789,6 +1847,273 @@ class LearningSession extends LearningSessionSummary {
 
     return tmp_element;
   }
+
+  static getBreakpointTableElement(breakpoint: Breakpoint | "") {
+    return breakpoint != "" && isSmaller(breakpoint, "md") ? "_md" : "";
+  }
+
+  toTableCard(mode: PropositionActions): GeneralTableCardElements {
+    const content: CustomElement[] =
+      mode == "view"
+        ? [
+            getCustomMessage("number", "" + this.number),
+            getCustomMessage(
+              "school_year",
+              this.school_year + "-" + (this.school_year + 1)
+            ),
+            getCustomMessage(
+              "number_school_year",
+              getCurrentElement("learning_session") + " " + this.toString(true),
+              "title"
+            ),
+            getCustomMessage("start", toDateString(this.start)),
+            getCustomMessage("end", toDateString(this.end)),
+            getCustomMessage(
+              "duration",
+              toDateString(this.start) + " - " + toDateString(this.end)
+            ),
+            getCustomMessage("groups", "" + this.num_groups),
+            getCustomMessage(
+              "groups_md",
+              getCurrentElement("groups") + ": " + this.num_groups
+            ),
+            getCustomMessage("open_day", toDateString(this.open_day, true)),
+            getCustomMessage(
+              "open_day_md",
+              getCurrentElement("open_day") +
+                ": " +
+                toDateString(this.open_day, true)
+            ),
+          ]
+        : [
+            getCustomMessage("number", "" + this.number),
+            getCustomMessage(
+              "school_year",
+              "" + this.school_year + "-" + (this.school_year + 1)
+            ),
+            getCustomMessage(
+              "number_school_year",
+              getCurrentElement("learning_session") +
+                ": " +
+                this.toString(true),
+              "title"
+            ),
+            {
+              id: "start_" + this.id,
+              type: "input_date",
+              content: toDateString(this.start),
+              params: {
+                placeholder: getCurrentElement("start"),
+                show_clear_button: false,
+                presentation: "date",
+              },
+            },
+            {
+              id: "start_md_" + this.id,
+              type: "input_date",
+              content: toDateString(this.start),
+              params: {
+                label: getCurrentElement("start"),
+                show_clear_button: false,
+                presentation: "date",
+              },
+            },
+            {
+              id: "end_" + this.id,
+              type: "input_date",
+              content: toDateString(this.end),
+              params: {
+                placeholder: getCurrentElement("end"),
+                show_clear_button: false,
+                presentation: "date",
+              },
+            },
+            {
+              id: "end_md_" + this.id,
+              type: "input_date",
+              content: toDateString(this.end),
+              params: {
+                label: getCurrentElement("end"),
+                show_clear_button: false,
+                presentation: "date",
+              },
+            },
+            {
+              id: "groups",
+              type: "input",
+              content: this.num_groups,
+              params: {
+                placeholder: getCurrentElement("groups"),
+                type: "number",
+              },
+            },
+            {
+              id: "groups_md",
+              type: "input",
+              content: this.num_groups,
+              params: {
+                label: getCurrentElement("groups"),
+                type: "number",
+              },
+            },
+            {
+              id: "open_day_" + this.id,
+              type: "input_date",
+              content: toDateString(this.open_day, true),
+              params: {
+                placeholder: getCurrentElement("open_day"),
+                show_clear_button: false,
+              },
+            },
+            {
+              id: "open_day_md_" + this.id,
+              type: "input_date",
+              content: toDateString(this.open_day, true),
+              params: {
+                label: getCurrentElement("open_day"),
+                show_clear_button: false,
+              },
+            },
+          ];
+
+    const layout: { [key: string]: string[] } =
+      mode == "view"
+        ? {
+            xl: ["number", "school_year", "start", "end", "groups", "open_day"],
+            md: ["number_school_year", "duration", "groups_md", "open_day_md"],
+          }
+        : {
+            xl: [
+              "number",
+              "school_year",
+              "start_" + this.id,
+              "end_" + this.id,
+              "groups",
+              "open_day_" + this.id,
+            ],
+            md: [
+              "number_school_year",
+              "start_md_" + this.id,
+              "end_md_" + this.id,
+              "groups_md",
+              "open_day_md_" + this.id,
+            ],
+          };
+
+    return {
+      id: "" + this.id,
+      group: "",
+      content: content,
+      layout: layout,
+    };
+  }
+
+  static cleanBackendUpdateObject(backend_update_values: {
+    [key: string]: any;
+  }) {
+    let put_time;
+
+    for (const key of Object.keys(backend_update_values)) {
+      put_time = false;
+      switch (key) {
+        case "num_groups":
+          backend_update_values[key] = parseInt(backend_update_values[key]);
+          break;
+        case "open_day":
+          put_time = true;
+          backend_update_values[key] = getDateStringToSend(
+            backend_update_values[key],
+            put_time
+          );
+          break;
+        case "start":
+        case "end":
+          backend_update_values[key] = getDateStringToSend(
+            backend_update_values[key],
+            put_time
+          );
+          break;
+      }
+    }
+  }
+
+  static cleanBackendObject(backend_values: { [key: string]: any }) {
+    LearningSession.cleanBackendUpdateObject(backend_values);
+    backend_values.number = parseInt(
+      backend_values.number.split(": ")[1].split(" - ")[0].trim()
+    );
+    backend_values.school_year = parseInt(
+      backend_values.school_year
+        .split(": ")[1]
+        .split(" - ")[1]
+        .split("-")[0]
+        .trim()
+    );
+  }
+
+  static getBackendCreateObject(
+    table_card: GeneralTableCardElements,
+    container_width: number
+  ): LearningSessionCreateProps {
+    const backend_values = getCardValues(
+      table_card,
+      LearningSession.attributes_templates,
+      parseInt(table_card.id),
+      container_width,
+      ["md"]
+    ) as LearningSessionCreateProps;
+    LearningSession.cleanBackendObject(backend_values);
+
+    return backend_values;
+  }
+
+  static getBackendUpdateObject(
+    table_card: GeneralTableCardElements,
+    container_width: number
+  ): LearningSessionUpdateProps {
+    const backend_update_values = getCardValues(
+      table_card,
+      LearningSession.attributes_to_update_templates,
+      parseInt(table_card.id),
+      container_width,
+      ["md"]
+    ) as LearningSessionUpdateProps;
+    LearningSession.cleanBackendUpdateObject(backend_update_values);
+
+    return backend_update_values;
+  }
+
+  equalToBackupUpdateObject(
+    backend_object: LearningSessionUpdateProps
+  ): boolean {
+    for (const [key, value] of Object.entries(backend_object)) {
+      if (
+        (["start", "end", "open_day"].includes(key) &&
+          value !== toDateString((this as any)[key] as Date)) ||
+        (["num_groups"].includes(key) &&
+          parseInt(value as string) !== (this as any)[key])
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  updateFromTableCard(
+    table_card: GeneralTableCardElements,
+    container_width: number
+  ) {
+    const attributes_update_values = LearningSession.getBackendUpdateObject(
+      table_card,
+      container_width
+    );
+
+    for (const [key, value] of Object.entries(attributes_update_values)) {
+      (this as any)[key] = ["start", "end", "open_day"].includes(key)
+        ? dateStringToDate(value as string, true)
+        : value;
+    }
+  }
 }
 
 type IconAlternatives = {
@@ -1868,7 +2193,8 @@ type ElementType =
   | "title"
   | "string_icon"
   | "input"
-  | "checkbox";
+  | "checkbox"
+  | "input_date";
 
 type LinkType = "request" | "event";
 
@@ -5510,6 +5836,8 @@ export {
   OrdinaryClassSummaryProps,
   OrdinaryClassSummary,
   OrdinaryClass,
+  LearningSessionUpdateProps,
+  LearningSessionCreateProps,
   LearningSessionProps,
   LearningSession,
   Enrollment,

@@ -15,7 +15,7 @@
   </div>
   <template v-else>
     <div
-      v-if="!isSmaller(breakpoint, 'sm')"
+      v-if="!isSmaller(breakpoint, list_breakpoint)"
       class="ion-margin white_background"
     >
       <ion-grid class="ion-padding">
@@ -178,7 +178,7 @@
       </ion-grid>
     </div>
     <list-card
-      v-if="isSmaller(breakpoint, 'sm')"
+      v-if="isSmaller(breakpoint, list_breakpoint)"
       :key="trigger"
       @execute_link="$emit('execute_link')"
       @signal_event="$emit('signal_event')"
@@ -348,6 +348,10 @@ const props = defineProps({
       string[] | TmpList<TmpList<(string | undefined)[]>>
     >,
     required: true,
+  },
+  list_breakpoint: {
+    type: String as PropType<Breakpoint>,
+    default: "sm",
   },
   colors: Object as PropType<Colors<GeneralCardSubElements>>, // TODO (5): vedere dove applicare colors e classes alla tabella
   classes: Object as PropType<Classes<CardsListElements | CardsGridElements>>,

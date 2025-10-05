@@ -241,8 +241,8 @@ export const store = createStore({
             "project_courses",
             "ordinary_classes",
             "course_proposals",
-            /*"learning_sessions_management",
-            "constraints_management",
+            "learning_sessions_management",
+            /*"constraints_management",
             "citizenship_report",
             "openbadges",
             "settings",*/
@@ -427,6 +427,7 @@ export const store = createStore({
           proposer_teacher: "Insegnante proponente",
           certifying_admin: "Amministratore certificante",
           course_information_not_found: "Informazioni del corso non trovate",
+          learning_session: "Sessione di apprendimento",
           learning_sessions: "Sessioni di apprendimento",
           teacher_learning_session_selection_message:
             "Seleziona una sessione di apprendimento per vedere i corsi in cui insegni o che ha un tuo insegnameto associato",
@@ -810,6 +811,53 @@ export const store = createStore({
           teaching_already_added: "Insegnamento già aggiunto",
           student_choice: "Scegli uno studente",
           select_teacher: "Scegli un insegnante",
+          start_date: "Data di inizio",
+          end_date: "Data di fine",
+          to_confirm: "Da confermare",
+          new_school_year: "Nuovo anno scolastico",
+          groups: "Gruppi",
+          no_learning_sessions: "Nessuna sessione di apprendimento",
+          add_session: "Aggiungi sessione",
+          set_valid_school_year: "Imposta un anno scolastico valido",
+          cancel_edits_confirm:
+            "Sicuro di voler annullare le modifiche? Perderai le modifiche applicate",
+          cancel_school_year_proposal_confirm:
+            "Sicuro di voler annullare? L'anno scolastico proposto verrà cancellato",
+          learning_sessions_proposal_confirm:
+            "Confermi di voler proporre queste sessioni di apprendimento per questo nuovo anno scolastico?",
+          learning_sessions_edits_confirm:
+            "Confermi di voler apportare queste modifiche alle sessioni di apprendimento?",
+          date_in_past_error: "Non puoi impostare una data passata",
+          anticipate_learning_session_error:
+            "Non puoi anticipare una sessione di apprendimento",
+          open_day_too_close:
+            "L'orientation day deve essere almeno 12 giorni prima dell'inizio della sessione di apprendimento",
+          start_after_end:
+            "La data di inizio deve essere antecedente alla data di fine",
+          sessions_not_in_order:
+            "Le sessioni di apprendimento non sono in ordine cronologico",
+          no_changes_detected: "Nessuna modifica rilevata",
+          at_least_one_group: "Deve esserci almeno un gruppo per sessione",
+          learning_session_not_found: "Sessione di apprendimento non trovata",
+          learning_session_not_valid: "Sessione di apprendimento non valida",
+          learning_session_not_created: "Sessione di apprendimento non creata",
+          learning_session_not_updated:
+            "Sessione di apprendimento non aggiornata",
+          learning_sessions_already_existent:
+            "Sessione di apprendimento già esistente",
+          learning_sessions_added: "Sessioni di apprendimento aggiunte",
+          existing_learning_session:
+            "Alcune sessioni di apprendimento esistono già",
+          wrong_learning_session:
+            "Alcune sessioni di apprendimento sono sbagliate",
+          learning_sessions_partially_added:
+            "Sessioni di apprendimento aggiunte parzialmente",
+          overlapping_learning_session:
+            "Alcune sessioni di apprendimento si sovrappongono",
+          all_overlapping_learning_session:
+            "Ogni sessione di apprendimento si sovrappone a un'altra",
+          start: "Inizio",
+          end: "Fine",
         },
         english: {
           credits_constraints: "Credits constraints",
@@ -859,6 +907,7 @@ export const store = createStore({
           proposer_teacher: "Proposer teacher",
           certifying_admin: "Certifying admin",
           course_information_not_found: "Course information not found",
+          learning_session: "Learning session",
           learning_sessions: "Learning sessions",
           teacher_learning_session_selection_message:
             "Select a learning session to see the courses you teach or that has a teaching of yours associated",
@@ -1206,7 +1255,7 @@ export const store = createStore({
           no_teachers_to_add: "No teachers to add",
           teachers_added: "Teachers added successfully",
           existing_teachers: "Some teachers already exist",
-          wrong_teachers: "Some teachers are wrong",
+          wrong_teachers: "Some teacher is wrong",
           teachers_partially_added: "Teachers partially added",
           all_teachers_already_added: "All teachers are already added",
           all_teachers_already_assigned: "All teachers are already assigned",
@@ -1218,7 +1267,7 @@ export const store = createStore({
           student_already_added: "Student already added",
           no_students_to_add: "No students to add",
           existing_students: "Some students already exist",
-          wrong_students: "Some students are wrong",
+          wrong_students: "Some student is wrong",
           students_partially_added: "Students partially added",
           all_students_already_added: "All students are already added",
           all_students_already_assigned: "All students are already assigned",
@@ -1230,6 +1279,49 @@ export const store = createStore({
           teaching_already_added: "Teaching already added",
           student_choice: "Choose a student",
           select_teacher: "Choose a teacher",
+          start_date: "Start date",
+          end_date: "End date",
+          to_confirm: "To confirm",
+          new_school_year: "New school year",
+          groups: "Gruppi",
+          no_learning_sessions: "No learning sessions",
+          add_session: "Add session",
+          set_valid_school_year: "Set a valid school year",
+          cancel_edits_confirm:
+            "Are you sure you want to cancel the changes? You will lose all the applied changes",
+          cancel_school_year_proposal_confirm:
+            "Are you sure you want to cancel? The proposed school year will be deleted",
+          learning_sessions_proposal_confirm:
+            "Do you confirm the learning sessions of this new school year?",
+          learning_sessions_edits_confirm:
+            "Do you confirm the changes made to the learning sessions?",
+          date_in_past_error: "You cannot set a past date",
+          anticipate_learning_session_error:
+            "You canot anticipate a learning session",
+          open_day_too_close:
+            "An orientation day must be at least 12 days before the start of the learning session",
+          start_after_end: "The start date must be before the end date",
+          sessions_not_in_order:
+            "The learning sessions are not in chronological order",
+          no_changes_detected: "No changes detected",
+          at_least_one_group:
+            "There must be at least one group per lerning session",
+          learning_session_not_found: "Learning session not found",
+          learning_session_not_valid: "Learning session not valid",
+          learning_session_not_created: "Learning session not created",
+          learning_session_not_updated: "Learning session not updated",
+          learning_sessions_already_existent:
+            "Learning session already existent",
+          learning_sessions_added: "Learning sessions added",
+          existing_learning_session: "Some learning sessions already exist",
+          wrong_learning_session: "Some learning sessions are wrong",
+          learning_sessions_partially_added:
+            "Learning sessions partially added",
+          overlapping_learning_session: "Some learning sessions ovelrap",
+          all_overlapping_learning_session:
+            "Each learning session overlaps with another",
+          start: "Start",
+          end: "End",
         },
       },
       logged_user: false,

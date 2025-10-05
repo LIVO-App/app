@@ -131,9 +131,9 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/ProjectCoursesHub.vue"),
   },
   {
-    path: "/learning_sessions_management", // TODO (6): unire a /project_courses
+    path: "/learning_sessions_management",
     name: "learning_sessions_management",
-    component: () => import("../views/NotImplemented.vue"),
+    component: () => import("../views/LearningSessionsManagement.vue"),
   },
   {
     path: "/constraints_management",
