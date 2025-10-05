@@ -43,6 +43,7 @@ import {
   Layout,
   GeneralCardSubElements,
   BreakpointScope,
+  LearningSession,
 } from "./types";
 import { $axios } from "./plugins/axios";
 import { store } from "./store";
@@ -244,8 +245,20 @@ function toSummary(
     : undefined;
 }
 
-function toDateString(date: Date) {
-  return date.toLocaleDateString("en-GB");
+function toDateString(date: Date, time = false, seconds = false) {
+  let date_string = date.toLocaleDateString("en-GB"),
+    tmp_date_list;
+
+  if (time) {
+    date_string += " " + date.toLocaleTimeString("en-GB");
+  }
+  if (time && !seconds) {
+    tmp_date_list = date_string.split(":");
+    tmp_date_list.pop();
+    date_string = tmp_date_list.join(":");
+  }
+
+  return date_string;
 }
 
 function getGender(key: Gender) {
@@ -1199,6 +1212,114 @@ function uploadMultipleImages(url: string, files: File[]): Promise<number> {
   );
 }
 
+function dateStringToDate(date: string, is_reversed = false) {
+  let hours = "00",
+    minutes = "00",
+    seconds = "00";
+  let datetime_string = date.split(" ");
+
+  const tmp_date = datetime_string[0].split("/");
+
+  const [day, month, year] = is_reversed ? tmp_date.reverse() : tmp_date;
+
+  if (datetime_string.length > 1) {
+    datetime_string = datetime_string[1].split(":");
+    hours = datetime_string[0];
+    minutes = datetime_string[1];
+    if (datetime_string.length > 2) {
+      seconds = datetime_string[2];
+    }
+
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    );
+  } else {
+    return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+  }
+}
+
+function dateStringToISODate(date: string) {
+  return dateStringToDate(date).toISOString();
+}
+
+function getDateStringToSend(date: string, put_time = false) {
+  let tmp_date_list = date.split(" "),
+    hours = "00",
+    minutes = "00",
+    seconds = "00";
+  const [day, month, year] = tmp_date_list[0].split("/");
+
+  if (tmp_date_list.length > 1) {
+    tmp_date_list = tmp_date_list[1].split(":");
+    hours = tmp_date_list[0];
+    minutes = tmp_date_list[1];
+    if (tmp_date_list.length > 2) {
+      seconds = tmp_date_list[2];
+    }
+  }
+
+  return (
+    `${year}/${month}/${day}` +
+    (put_time ? ` ${hours}:${minutes}:${seconds}` : "")
+  );
+}
+
+function getCardValues(
+  table_card: GeneralCardElements,
+  attributes_templates: {
+    [key: string]: (breakpoint: Breakpoint | "", id: number) => string;
+  },
+  id: number,
+  container_width: number,
+  breakpoints: Breakpoint[] | undefined = undefined
+) {
+  // TODO (5): da eliminare dopo aver creato variabile comune per input da visualizzare in breakpoint diversi
+  const actual_breakpoint = getBreakpoint(container_width);
+  const card_values: {
+    [key: string]: any;
+  } = {};
+  const attributes_to_update_map: {
+    [key: string]: string[];
+  } = {};
+  const card_breakpoints: (Breakpoint | "")[] = breakpoints ?? [];
+  card_breakpoints.unshift("");
+
+  for (const key of Object.keys(attributes_templates)) {
+    attributes_to_update_map[key] = card_breakpoints.map((breakpoint) =>
+      attributes_templates[key](breakpoint, id)
+    );
+  }
+
+  let attributes_values: string[], actual_value: string;
+
+  for (const key in attributes_to_update_map) {
+    attributes_values = table_card
+      .content!.filter((element) =>
+        attributes_to_update_map[key].includes(element.id)
+      )
+      .map((element) => element.content as string);
+    if (attributes_values.every((val) => val === attributes_values[0])) {
+      actual_value = attributes_values[0];
+    } else {
+      actual_value = (table_card.content!.find(
+        (element) =>
+          element.id == attributes_templates[key](actual_breakpoint, id)
+      )?.content ??
+        table_card.content!.find(
+          (element) => element.id == attributes_templates[key]("", id)
+        )?.content) as string;
+    }
+    card_values[key] = actual_value;
+  }
+
+  return card_values;
+}
+
 export {
   getCompleteSchoolYear,
   getCurrentSchoolYear,
@@ -1276,4 +1397,8 @@ export {
   castLayoutRow,
   downloadCsv,
   uploadMultipleImages,
+  dateStringToDate,
+  dateStringToISODate,
+  getDateStringToSend,
+  getCardValues,
 };

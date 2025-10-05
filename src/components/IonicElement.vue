@@ -1,4 +1,18 @@
 <template>
+  <ion-modal v-if="element.type == 'input_date'" :keep-contents-mounted="true">
+    <ion-datetime
+      :id="'date_' + element.id"
+      @ion-change="changeDate"
+      :presentation="element.params?.presentation"
+      :first-day-of-week="1"
+      :max="actual_max_date"
+      hour-cycle="h23"
+      :locale="getLocale()"
+      :show-clear-button="element.params?.show_clear_button ?? true"
+      :clear-text="getCurrentElement('clear')"
+      :value="date_ref"
+    />
+  </ion-modal>
   <div
     v-if="element.type == 'html'"
     v-html="element.content"
@@ -9,8 +23,9 @@
     :type="element.params?.type ?? 'text'"
     :value="castInputValue(element_ref.content)"
     :disabled="element.params?.disabled"
-    :label="acutal_input_label"
-    :aria-label="acutal_input_label"
+    :label="actual_label"
+    :aria-label="actual_label"
+    :placeholder="actual_input_placeholder"
     :color="getIonicColor(element.colors?.text)"
     :size="element.params?.size ?? 'default'"
     fill="outline"
@@ -18,7 +33,6 @@
     @ion-input="
       ($event) => {
         const tmp_element = element;
-
         tmp_element.content =
           $event.target.value ?? (element.params?.type == 'number' ? 0 : '');
         $emit('update:element', tmp_element);
@@ -46,7 +60,7 @@
     v-else-if="element.type == 'checkbox'"
     :disabled="element.params?.disabled"
     :checked="castCheckboxValue(element_ref.content)"
-    :aria-label="acutal_input_label"
+    :aria-label="actual_label"
     :class="actual_classes.checkbox"
     :style="{
       '--checkmark-color': css_checkmark_color,
@@ -124,6 +138,24 @@
           {{ castStringIcon(element.content).text }}
         </ion-label>
       </template>
+    </ion-item>
+    <ion-item
+      v-if="element.type == 'input_date'"
+      lines="none"
+      style="width: fit-content"
+    >
+      <ion-label
+        v-if="actual_label != ''"
+        :aria-label="actual_label"
+        color="primary"
+        style="color: var(--ion-color-primary); width: fit-content"
+        >{{ actual_label }}</ion-label
+      >
+      <ion-datetime-button
+        :datetime="'date_' + element.id"
+        style="width: fit-content"
+        class="ion-padding-start"
+      />
     </ion-item>
   </template>
   <template v-else>
@@ -313,6 +345,10 @@ import {
   updateBreakpointClasses,
   getCssColor,
   getIonicColor,
+  getLocale,
+  getCurrentElement,
+  dateStringToISODate,
+  toDateString,
 } from "@/utils";
 import {
   IonCheckbox,
@@ -321,8 +357,14 @@ import {
   IonIcon,
   IonItem,
   IonInput,
+  DatetimeCustomEvent,
+  IonDatetime,
+  IonDatetimeButton,
+  IonModal,
 } from "@ionic/vue";
 import {
+  computed,
+  ComputedRef,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -359,6 +401,31 @@ const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
 
   updateElementClasses();
+};
+const changeDate = (event: DatetimeCustomEvent) => {
+  const tmp_str_date = event.target.value;
+
+  let tmp_date: Date;
+
+  if (typeof tmp_str_date == "string") {
+    tmp_date = new Date(tmp_str_date);
+
+    if (actual_max_date == undefined || tmp_date <= actual_max_date) {
+      element_ref.value.content = toDateString(tmp_date);
+    } else {
+      element_ref.value.content = "";
+    }
+  } else {
+    element_ref.value.content = "";
+  }
+  emit("update:element", props.element);
+  store.state.event = {
+    event: "ion-input",
+    data: {
+      element_ref: props.element.params?.ref ?? props.element.id,
+    },
+  };
+  emit("signal_event");
 };
 
 const store = useStore();
@@ -447,12 +514,27 @@ const actual_classes: Classes<SubElements, boolean> = reactive({
   },
 });
 
-const acutal_input_label =
+const actual_label =
   typeof props.element.params?.label == "string"
     ? props.element.params.label
     : "";
+const actual_input_placeholder =
+  typeof props.element.params?.placeholder == "string"
+    ? props.element.params.placeholder
+    : "";
+const actual_max_date =
+  props.element.params?.max_date != undefined
+    ? props.element.params.max_date
+    : undefined;
 
 const element_ref = ref(props.element);
+
+let date_ref: ComputedRef<string> | undefined = undefined;
+if (props.element.type === "input_date") {
+  date_ref = computed(() =>
+    dateStringToISODate(element_ref.value.content as string)
+  );
+}
 
 updateElementClasses();
 if (

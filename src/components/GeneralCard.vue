@@ -253,6 +253,7 @@ const props = defineProps({
   colors: Object as PropType<Colors<GeneralCardSubElements>>,
   classes: Object as PropType<Classes<CardSubElements>>,
 });
+// <!-- TODO (4): forse manca propagazione del content tra gli stessi elementi (es. id:name e id:name_sm) e elementi collegati (id:number + id:group e id:number_group), visto che al momento, se si scrive una cosa su un elemento in un certo layout, quando si cambierà layout l'elemento collegato non avrà lo stesso valore
 const emit = defineEmits([
   "execute_link",
   "signal_event",
