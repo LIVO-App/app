@@ -1,8 +1,19 @@
 <template>
   <ion-header collapse="condense">
-    <ion-toolbar class="ion-text-center">
-      <ion-title size="large" color="white">{{ props.title }}</ion-title>
-      <ion-title size="small" color="white">{{ props.subtitle }}</ion-title>
+    <ion-toolbar color="primary">
+      <ion-title
+        size="large"
+        class="ion-justify-content-center"
+        color="white"
+        >{{ props.title }}</ion-title
+      >
+      <ion-title
+        v-if="props.subtitle"
+        size="small"
+        class="ion-justify-content-center"
+        color="white"
+        >{{ props.subtitle }}</ion-title
+      >
     </ion-toolbar>
   </ion-header>
 </template>
