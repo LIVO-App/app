@@ -3190,7 +3190,7 @@ class StudentInformation extends StudentSummary {
     super(props);
     this.username = props.username;
     this.gender = props.gender as Gender;
-    this.birth_date = new Date(props.birth_date);
+    this.birth_date = props.birth_date ? new Date(props.birth_date) : undefined;
     this.address = props.address;
     this.email = props.email;
 
@@ -4678,6 +4678,7 @@ class TeacherSummary {
 }
 
 class Teacher extends TeacherSummary {
+  username: string;
   cf?: string;
   surname: string;
   gender?: Gender;
@@ -4691,13 +4692,64 @@ class Teacher extends TeacherSummary {
       name: teacher.name,
       surname: teacher.surname,
     });
+    this.username = teacher.username;
     this.cf = teacher.cf;
     this.surname = teacher.surname;
     this.gender =
       teacher.gender == "M" || teacher.gender == "F" ? teacher.gender : "O";
-    this.birth_date = new Date(teacher.birth_date);
+    this.birth_date = teacher.birth_date
+      ? new Date(teacher.birth_date)
+      : undefined;
     this.address = teacher.address;
     this.email = teacher.email;
+  }
+
+  toCard(): GeneralCardElements {
+    return {
+      id: "" + this.username,
+      title: getCustomMessage("title", this.username, "title"),
+      group: "",
+      content: [
+        {
+          id: this.id + "_name",
+          type: "string",
+          content: getCurrentElement("name") + ": " + this.name,
+        },
+        {
+          id: this.id + "_surname",
+          type: "string",
+          content: getCurrentElement("surname") + ": " + this.surname,
+        },
+        {
+          id: this.id + "_gender",
+          type: "string",
+          content:
+            getCurrentElement("gender") +
+            ": " +
+            (this.gender != undefined ? getGender(this.gender) : "-"),
+        },
+        {
+          id: this.id + "_birth_date",
+          type: "string",
+          content:
+            getCurrentElement("birth_date") +
+            ": " +
+            (this.birth_date != undefined && !isNaN(this.birth_date.getTime())
+              ? toDateString(this.birth_date)
+              : "-"),
+        },
+        {
+          id: this.id + "_address",
+          type: "string",
+          content: getCurrentElement("address") + ": " + (this.address ?? "-"),
+        },
+        {
+          id: this.id + "_email",
+          type: "string",
+          content: getCurrentElement("email") + ": " + this.email,
+        },
+      ],
+    };
   }
 }
 
@@ -5069,6 +5121,92 @@ class AdminSummary {
     this.id = summary.id;
     this.name = summary.name;
     this.surname = summary.surname;
+  }
+}
+
+type AdminProps = {
+  id: number;
+  cf: string;
+  username: string;
+  name: string;
+  surname: string;
+  gender: string;
+  birth_date: string;
+  address: string;
+  email: string;
+};
+
+class Admin extends AdminSummary {
+  username: string;
+  cf?: string;
+  surname: string;
+  gender?: Gender;
+  birth_date?: Date;
+  address?: string;
+  email?: string;
+
+  constructor(admin: AdminProps) {
+    super({
+      id: admin.id,
+      name: admin.name,
+      surname: admin.surname,
+    });
+    this.username = admin.username;
+    this.cf = admin.cf;
+    this.surname = admin.surname;
+    this.gender =
+      admin.gender == "M" || admin.gender == "F" ? admin.gender : "O";
+    this.birth_date = admin.birth_date ? new Date(admin.birth_date) : undefined;
+    this.address = admin.address;
+    this.email = admin.email;
+  }
+
+  toCard(): GeneralCardElements {
+    return {
+      id: "" + this.username,
+      title: getCustomMessage("title", this.username, "title"),
+      group: "",
+      content: [
+        {
+          id: this.id + "_name",
+          type: "string",
+          content: getCurrentElement("name") + ": " + this.name,
+        },
+        {
+          id: this.id + "_surname",
+          type: "string",
+          content: getCurrentElement("surname") + ": " + this.surname,
+        },
+        {
+          id: this.id + "_gender",
+          type: "string",
+          content:
+            getCurrentElement("gender") +
+            ": " +
+            (this.gender != undefined ? getGender(this.gender) : "-"),
+        },
+        {
+          id: this.id + "_birth_date",
+          type: "string",
+          content:
+            getCurrentElement("birth_date") +
+            ": " +
+            (this.birth_date != undefined && !isNaN(this.birth_date.getTime())
+              ? toDateString(this.birth_date)
+              : "-"),
+        },
+        {
+          id: this.id + "_address",
+          type: "string",
+          content: getCurrentElement("address") + ": " + (this.address ?? "-"),
+        },
+        {
+          id: this.id + "_email",
+          type: "string",
+          content: getCurrentElement("email") + ": " + this.email,
+        },
+      ],
+    };
   }
 }
 
@@ -5980,4 +6118,6 @@ export {
   Outcome,
   LearningAreasStructures,
   StudentGrade,
+  AdminProps,
+  Admin,
 };

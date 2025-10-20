@@ -280,6 +280,8 @@ function isEventString(element: any): element is EventString {
   return isEvent(element) && "text" in element;
 }
 
+const isFile = (element: any): element is File => element instanceof File;
+
 function getStatusString(status: LearningSessionStatus) {
   return status == LearningSessionStatus.CURRENT
     ? getCurrentElement("current")
@@ -1342,6 +1344,7 @@ export {
   isEvent,
   isRequest,
   isEventString,
+  isFile,
   getStatusString,
   getStatusColor,
   getCurrentLanguage,

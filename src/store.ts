@@ -58,6 +58,8 @@ import {
   downloadSharp,
   personOutline,
   personSharp,
+  eyeOffOutline,
+  eyeOffSharp,
 } from "ionicons/icons";
 import { User, UserProps } from "./types";
 
@@ -198,6 +200,14 @@ export const store = createStore({
             },
             icon_ref: "settings",
           },
+          profile: {
+            url_names: {
+              student: ["profile"],
+              teacher: ["profile"],
+              admin: ["profile"],
+            },
+            icon_ref: "person",
+          },
           logout: {
             // TODO (5): spostare in profilo quando verrà creato
             url_names: {
@@ -224,7 +234,7 @@ export const store = createStore({
             /*"openbadges",
             "citizenship_report",
             "settings",*/
-            "logout",
+            "profile",
             //"info",
           ],
           teacher: [
@@ -233,7 +243,7 @@ export const store = createStore({
             "open_day_courses",
             "ordinary_classes",
             //"settings",
-            "logout",
+            "profile",
             //"info",
           ],
           admin: [
@@ -246,7 +256,7 @@ export const store = createStore({
             "citizenship_report",
             "openbadges",
             "settings",*/
-            "logout",
+            "profile",
             //"info",
           ],
         },
@@ -349,6 +359,10 @@ export const store = createStore({
         eye: {
           ios: eyeOutline,
           md: eyeSharp,
+        },
+        eyeOff: {
+          ios: eyeOffOutline,
+          md: eyeOffSharp,
         },
         earth: {
           ios: earthOutline,
@@ -489,6 +503,7 @@ export const store = createStore({
           auth: "Autenticazione",
           username: "Username",
           password: "Password",
+          new_password: "Nuova password",
           admin: "Amministratore",
           login: "Login",
           wrong_username_or_password: "Username o password sbagliati",
@@ -576,6 +591,7 @@ export const store = createStore({
           yes: "Sì",
           open_day: "Orientation day",
           user_not_valid: "Utente non valido",
+          user_not_found: "Utente non trovato",
           proposition_confrimation: "Confermi di voler proporre il corso?",
           general_error: "Si è verificato un errore",
           missing_italian_title: "Titolo in italiano mancante",
@@ -828,6 +844,7 @@ export const store = createStore({
           learning_sessions_edits_confirm:
             "Confermi di voler apportare queste modifiche alle sessioni di apprendimento?",
           date_in_past_error: "Non puoi impostare una data passata",
+          date_in_future_error: "Non puoi impostare una data futura",
           anticipate_learning_session_error:
             "Non puoi anticipare una sessione di apprendimento",
           open_day_too_close:
@@ -858,6 +875,18 @@ export const store = createStore({
             "Ogni sessione di apprendimento si sovrappone a un'altra",
           start: "Inizio",
           end: "Fine",
+          profile: "Profilo",
+          profile_image: "Immagine profilo",
+          profile_edits_confirm: "Confermi le modifiche fatte al tuo profilo?",
+          image_not_valid: "Immagine non valida",
+          iamge_delete_error: "L'immagine non può essere cancellata",
+          profile_not_edited: "Profilo non modificato",
+          profile_partial_edited: "Profilo parzialmente modificato",
+          successful_profile_edit: "Profilo modificato con successo",
+          profile_no_edited: "Profilo non modificato",
+          profile_partially_edited: "Profilo modificato parzialmente",
+          empty_field_error:
+            "Non è possibile cancellare il testo di un campo completamente",
         },
         english: {
           credits_constraints: "Credits constraints",
@@ -967,6 +996,7 @@ export const store = createStore({
           auth: "Authentication",
           username: "Username",
           password: "Password",
+          new_password: "New password",
           admin: "Admin",
           login: "Login",
           wrong_username_or_password: "Wrong username or password",
@@ -1052,6 +1082,8 @@ export const store = createStore({
           no: "No",
           yes: "Yes",
           open_day: "Orientation day",
+          user_not_valid: "Not valid user",
+          user_not_found: "User not found",
           not_existing_user: "User not valid",
           proposition_confrimation:
             "Do you confirm your proposition of the course?",
@@ -1296,6 +1328,7 @@ export const store = createStore({
           learning_sessions_edits_confirm:
             "Do you confirm the changes made to the learning sessions?",
           date_in_past_error: "You cannot set a past date",
+          date_in_future_error: "You cannot set a future date",
           anticipate_learning_session_error:
             "You canot anticipate a learning session",
           open_day_too_close:
@@ -1322,6 +1355,18 @@ export const store = createStore({
             "Each learning session overlaps with another",
           start: "Start",
           end: "End",
+          profile: "Profile",
+          profile_image: "Profile image",
+          profile_edits_confirm:
+            "Do you confirm the changes made to your profile?",
+          image_not_valid: "Image not valid",
+          iamge_delete_error: "The image cannot be deleted",
+          profile_not_edited: "Profile not edited",
+          profile_partial_edited: "Profile partial edited",
+          successful_profile_edit: "Profile successfully edited",
+          profile_no_edited: "Profile not edited",
+          profile_partially_edited: "Profile partially edited",
+          empty_field_error: "You cannot entirely delete the text of a field",
         },
       },
       logged_user: false,

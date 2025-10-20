@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/UserAuthentication.vue"),
   },
   {
+    path: "/profile",
+    name: "profile",
+    component: () => import("../views/UserDescription.vue"),
+  },
+  {
     path: "/logout",
     name: "logout",
     component: () => import("../views/TmpLogout.vue"),

@@ -29,7 +29,7 @@ import AnnouncementViewer from "./components/AnnouncementViewer.vue";
 import AnnouncementsPublisher from "./components/AnnouncementsPublisher.vue";
 import ProjectClassesList from "./components/ProjectClassesList.vue";
 import ProjectClassSelectList from "./components/ProjectClassSelectList.vue";
-import StudentDescription from "./components/StudentDescription.vue";
+import UserDescription from "./components/UserDescription.vue";
 import OverallStudentDescription from "./components/OverallStudentDescription.vue";
 import AuthPanel from "./components/AuthPanel.vue";
 import CourseProposition from "./components/CourseProposition.vue";
@@ -101,7 +101,7 @@ const app = createApp(App)
   .component("AnnouncementsPublisher", AnnouncementsPublisher)
   .component("ProjectClassesList", ProjectClassesList)
   .component("ProjectClassSelectList", ProjectClassSelectList)
-  .component("StudentDescription", StudentDescription)
+  .component("UserDescription", UserDescription)
   .component("OverallStudentDescription", OverallStudentDescription)
   .component("AuthPanel", AuthPanel)
   .component("CourseProposition", CourseProposition)
