@@ -165,7 +165,7 @@ watch($route, changeTitle);
 
 <style scoped>
 ion-menu ion-content {
-  --background: var(--ion-item-background, var(--ion-background-color));
+  --background: var(--ion-item-background, var(--ion-color-background));
 }
 
 ion-menu.md ion-content {
