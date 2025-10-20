@@ -13,16 +13,21 @@
       <div class="ion-text-center">
         <ionic-element
           v-if="show_name"
-          :element="getCustomMessage(image.name, image.name)"
+          :element="getCustomMessage(getName(index), getName(index))"
         />
         <ion-img
           :src="
-            isFile(image)
+            isImageDescriptor(image)
+              ? image.url
+              : isFile(image)
               ? require('@/assets/' + language + '_to_load.png')
-              : image.url
+              : image
           "
-          :alt="image.name"
-          style="height: 150px"
+          :alt="getName(index)"
+          :style="{
+            height: height,
+            width: width,
+          }"
         />
       </div>
     </swiper-slide>
@@ -30,16 +35,21 @@
   <div v-else-if="images.length == 1" class="ion-text-center">
     <ionic-element
       v-if="show_name"
-      :element="getCustomMessage(images[0].name, images[0].name)"
+      :element="getCustomMessage(getName(0), getName(0))"
     />
     <ion-img
       :src="
-        isFile(images[0])
+        isImageDescriptor(images[0])
+          ? images[0].url
+          : isFile(images[0])
           ? require('@/assets/' + language + '_to_load.png')
-          : images[0].url
+          : images[0]
       "
-      :alt="images[0].name"
-      style="height: 150px"
+      :alt="getName(0)"
+      :style="{
+        height: height,
+        width: width,
+      }"
     />
   </div>
 </template>
@@ -49,20 +59,40 @@ import { Swiper, SwiperSlide } from "swiper/vue";
 import { Navigation, Autoplay } from "swiper/modules";
 import { ImageDescriptor } from "@/types";
 import { PropType } from "vue";
-import { getCurrentLanguage, getCustomMessage } from "@/utils";
+import { getCurrentLanguage, getCustomMessage, isFile } from "@/utils";
 import { IonImg } from "@ionic/vue";
 
-const isFile = (image: ImageDescriptor | File): image is File =>
-  image instanceof File;
+const isImageDescriptor = (
+  image: ImageDescriptor | File | NodeRequire
+): image is ImageDescriptor =>
+  image instanceof Object && "name" in image && "url" in image;
+const getName = (idx: number) =>
+  props.images_names && props.images_names.length > idx
+    ? props.images_names[idx]
+    : props.images.length > idx &&
+      (isFile(props.images[idx]) || isImageDescriptor(props.images[idx]))
+    ? props.images[idx].name
+    : "Image";
 
-defineProps({
+const props = defineProps({
   images: {
-    type: Array as PropType<(ImageDescriptor | File)[]>,
+    type: Array as PropType<(ImageDescriptor | File | NodeRequire)[]>,
     required: true,
+  },
+  images_names: {
+    type: Array as PropType<string[]>,
   },
   show_name: {
     type: Boolean,
     default: false,
+  },
+  height: {
+    type: String,
+    default: "150px",
+  },
+  width: {
+    type: String,
+    default: "auto",
   },
 });
 
