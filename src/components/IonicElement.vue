@@ -19,7 +19,7 @@
     :class="actual_classes.html"
   ></div>
   <ion-input
-    v-else-if="element.type == 'input'"
+    v-else-if="element.type == 'input' && element.params?.type != 'password'"
     :type="element.params?.type ?? 'text'"
     :value="castInputValue(element_ref.content)"
     :disabled="element.params?.disabled"
@@ -56,6 +56,51 @@
       $emit('signal_event');
     "
   />
+  <ion-item
+    v-else-if="element.type == 'input' && element.params?.type == 'password'"
+    :class="actual_classes.item"
+    lines="none"
+  >
+    <ion-input
+      :type="show_password ? 'text' : 'password'"
+      :value="castInputValue(element_ref.content)"
+      :disabled="element.params?.disabled"
+      :label="actual_label"
+      :aria-label="actual_label"
+      :placeholder="actual_input_placeholder"
+      :color="getIonicColor(element.colors?.text)"
+      :size="element.params?.size ?? 'default'"
+      fill="outline"
+      :class="actual_classes.input"
+      @ion-input="
+        ($event) => {
+          const tmp_element = element;
+          tmp_element.content =
+            $event.target.value ?? (element.params?.type == 'number' ? 0 : '');
+          $emit('update:element', tmp_element);
+          store.state.event = {
+            event: 'ion-input',
+            data: {
+              element_ref: element.params?.ref ?? element.id,
+            },
+          };
+          $emit('signal_event');
+        }
+      "
+    />
+    <ion-button
+      slot="end"
+      fill="clear"
+      @click="togglePassword"
+      :class="actual_classes.button"
+    >
+      <ion-icon
+        :ios="eye_icons[show_password].ios"
+        :md="eye_icons[show_password].md"
+        :class="actual_classes.icon"
+      />
+    </ion-button>
+  </ion-item>
   <ion-checkbox
     v-else-if="element.type == 'checkbox'"
     :disabled="element.params?.disabled"
@@ -143,6 +188,7 @@
       v-if="element.type == 'input_date'"
       lines="none"
       style="width: fit-content"
+      class="ion-no-padding"
     >
       <ion-label
         v-if="actual_label != ''"
@@ -349,6 +395,7 @@ import {
   getCurrentElement,
   dateStringToISODate,
   toDateString,
+  getIcon,
 } from "@/utils";
 import {
   IonCheckbox,
@@ -410,7 +457,7 @@ const changeDate = (event: DatetimeCustomEvent) => {
   if (typeof tmp_str_date == "string") {
     tmp_date = new Date(tmp_str_date);
 
-    if (actual_max_date == undefined || tmp_date <= actual_max_date) {
+    if (actual_max_date == undefined || tmp_date <= new Date(actual_max_date)) {
       element_ref.value.content = toDateString(tmp_date);
     } else {
       element_ref.value.content = "";
@@ -426,6 +473,12 @@ const changeDate = (event: DatetimeCustomEvent) => {
     },
   };
   emit("signal_event");
+};
+const togglePassword = () => {
+  if (element_ref.value.params == undefined) {
+    element_ref.value.params = {};
+  }
+  show_password.value = +!show_password.value;
 };
 
 const store = useStore();
@@ -486,10 +539,17 @@ const actual_classes: Classes<SubElements, boolean> = reactive({
     borders: css_borders_color != undefined,
   },
   icon: {
-    textColor: props.element.colors?.text != undefined,
-    backgroundColor: css_background_color != undefined,
+    textColor:
+      props.element.colors?.text != undefined &&
+      props.element.params?.type != "password",
+    backgroundColor:
+      css_background_color != undefined &&
+      props.element.params?.type != "password",
     borders:
-      css_borders_color != undefined && props.element.linkType == undefined,
+      css_borders_color != undefined &&
+      props.element.linkType == undefined &&
+      props.element.params?.type != "password",
+    backgroundIcon: props.element.params?.type == "password",
   },
   button: {
     customText: props.element.colors?.text != undefined,
@@ -499,6 +559,7 @@ const actual_classes: Classes<SubElements, boolean> = reactive({
   item: {
     backgroundColor: css_background_color != undefined,
     borders: css_borders_color != undefined,
+    "ion-no-padding": props.element.params?.type == "password",
   },
   input: {
     // <!-- TODO (5): mette le classi in props.element.classes?.input, ma non funzionano (anche checkbox)
@@ -522,17 +583,26 @@ const actual_input_placeholder =
   typeof props.element.params?.placeholder == "string"
     ? props.element.params.placeholder
     : "";
-const actual_max_date =
+const actual_max_date: string =
   props.element.params?.max_date != undefined
     ? props.element.params.max_date
     : undefined;
 
 const element_ref = ref(props.element);
+const show_password = ref(0);
+const eye_icons: {
+  [key: number]: IconAlternatives;
+} = {
+  0: getIcon("eye"),
+  1: getIcon("eyeOff"),
+};
 
-let date_ref: ComputedRef<string> | undefined = undefined;
+let date_ref: ComputedRef<string | undefined> | undefined = undefined;
 if (props.element.type === "input_date") {
   date_ref = computed(() =>
-    dateStringToISODate(element_ref.value.content as string)
+    element_ref.value.content == ""
+      ? undefined
+      : dateStringToISODate(element_ref.value.content as string)
   );
 }
 
@@ -597,6 +667,9 @@ watch(
 .placeholderColor {
   --placeholder-color: v-bind("css_placeholder_color");
   --placeholder-opacity: v-bind("css_placeholder_opacity");
+}
+.backgroundIcon {
+  color: v-bind("css_background_color");
 }
 /*.paddingButton {
   --padding-top: 10px;
