@@ -619,7 +619,7 @@ const progress_infos: Ref<
     percentage: number;
   }[]
 > = ref([]);
-const is_edit = ref(true);
+const is_edit = ref(false);
 const selected_gender: Ref<Gender | ""> = ref(user_data.gender ?? "");
 const user_trigger = ref(0);
 const password_trigger = ref(0);
@@ -632,7 +632,7 @@ let user_card: GeneralCardElements = user_data.toCard();
 let profile_picture: ImageDescriptor | undefined,
   original_image_name: string | undefined,
   images_list: Ref<(ImageDescriptor | File)[]>,
-  default_profile_picture: NodeRequire | undefined;
+  default_profile_picture: string | undefined;
 
 await loadProfilePicture();
 </script>

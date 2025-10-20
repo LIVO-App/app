@@ -62,8 +62,11 @@ import { PropType } from "vue";
 import { getCurrentLanguage, getCustomMessage, isFile } from "@/utils";
 import { IonImg } from "@ionic/vue";
 
+// Use `string` for module/imported image references instead of NodeRequire,
+// because `NodeRequire` may not exist in browser runtime and causes
+// "NodeRequire is not defined" on some machines when the bundle is run.
 const isImageDescriptor = (
-  image: ImageDescriptor | File | NodeRequire
+  image: ImageDescriptor | File | string
 ): image is ImageDescriptor =>
   image instanceof Object && "name" in image && "url" in image;
 const getName = (idx: number) =>
@@ -76,7 +79,9 @@ const getName = (idx: number) =>
 
 const props = defineProps({
   images: {
-    type: Array as PropType<(ImageDescriptor | File | NodeRequire)[]>,
+    // Accept ImageDescriptor objects, File objects (from file inputs),
+    // or plain strings (URL or webpack/rollup require() import result).
+    type: Array as PropType<(ImageDescriptor | File | string)[]>,
     required: true,
   },
   images_names: {

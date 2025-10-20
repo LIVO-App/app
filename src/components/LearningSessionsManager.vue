@@ -60,7 +60,7 @@
           @signal_event="setupModalAndOpen('confirm')"
         />
         <ionic-element
-          v-else
+          v-else-if="selected_school_year >= getCurrentSchoolYear()"
           :element="action == 'view' ? elements['edit'] : elements['view']"
           @signal_event="editOrConfirmEdits(action)"
         />
@@ -113,7 +113,9 @@ import {
 import {
   dateStringToDate,
   executeLink,
+  getCompleteSchoolYear,
   getCurrentElement,
+  getCurrentSchoolYear,
   getCustomMessage,
   getIcon,
 } from "@/utils";
@@ -219,8 +221,11 @@ const addLearningSession = () => {
 };
 const schoolYearSelector = (school_year: { id: number }) => {
   return school_year.id == new_year_to_create.value
-    ? school_year.id + " (" + getCurrentElement("to_confirm") + ")"
-    : "" + school_year.id;
+    ? getCompleteSchoolYear(school_year.id) +
+        " (" +
+        getCurrentElement("to_confirm") +
+        ")"
+    : "" + getCompleteSchoolYear(school_year.id);
 };
 const setupModalAndOpen = async (window?: availableModal) => {
   const actual_window: availableModal = window || store.state.event.event;
@@ -675,6 +680,7 @@ const selected_school_year = ref(-1);
 const action: Ref<PropositionActions> = ref("view");
 const alert_open = ref(false);
 const new_year_to_create = ref(-1);
+const current_school_year = getCurrentSchoolYear();
 const school_years: {
   id: number;
 }[] = [];
@@ -715,7 +721,9 @@ await executeLink("/v1/learning_sessions/school_years", (response) => {
       id: sy.school_year,
     });
   }
-  selected_school_year.value = school_years[0].id;
+  selected_school_year.value =
+    school_years.find((sy) => sy.id === current_school_year)?.id ??
+    school_years[0].id;
 });
 
 watch(
