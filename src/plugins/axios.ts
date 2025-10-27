@@ -21,7 +21,10 @@ const options: {
   baseUrl?: string;
   token?: string;
 } = {
-  baseUrl: "http://localhost:5000/api",
+  baseUrl:
+    process.env.NODE_ENV === "production"
+      ? "https://backend.livopath.istitutodecarneri.it/api"
+      : "http://localhost:5000/api",
   token: sessionStorage.getItem("token") ?? undefined,
 };
 
