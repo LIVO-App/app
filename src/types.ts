@@ -3412,6 +3412,7 @@ type UserSummaryProps = {
 type UserProps = UserSummaryProps & {
   username: string;
   token: string;
+  refresh_token?: string;
   expirationDate: string;
   // TODO (4): mettere first_access
 };
@@ -3449,12 +3450,14 @@ class UserSummary {
 class User extends UserSummary {
   private _username: string;
   private _token: string;
+  private _refresh_token?: string;
   private _expiration_date: Date;
 
   constructor(props: UserProps, subtype?: UserSubType) {
     super(props, subtype);
     this._username = props.username;
     this._token = props.token;
+    this._refresh_token = props.refresh_token;
     this._expiration_date = new Date(props.expirationDate);
   }
 
@@ -3466,6 +3469,22 @@ class User extends UserSummary {
     return this._token;
   }
 
+  public set token(new_token: string) {
+    this._token = new_token;
+  }
+
+  public get refresh_token(): string | undefined {
+    return this._refresh_token;
+  }
+
+  public set refresh_token(new_refresh_token: string | undefined) {
+    this._refresh_token = new_refresh_token;
+  }
+
+  public set expiration_date(new_expiration: Date) {
+    this._expiration_date = new_expiration;
+  }
+
   public get expiration_date(): Date {
     return this._expiration_date;
   }
@@ -3473,7 +3492,7 @@ class User extends UserSummary {
   static getProperties() {
     return super
       .getProperties()
-      .concat(["username", "token", "expiration_date"]);
+      .concat(["username", "token", "refresh_token", "expiration_date"]);
   }
 
   static getLoggedUser() {
@@ -3488,6 +3507,7 @@ class User extends UserSummary {
           id: parseInt(session.getItem("id") as string),
           username: session.getItem("username") as string,
           token: session.getItem("token") as string,
+          refresh_token: session.getItem("refresh_token") ?? undefined,
           user: session.getItem("type") as UserType,
           expirationDate: session.getItem("expiration_date") as string,
         },

@@ -43,6 +43,7 @@ import {
   Layout,
   GeneralCardSubElements,
   BreakpointScope,
+  UserProps,
 } from "./types";
 import { $axios } from "./plugins/axios";
 import { store } from "./store";
@@ -50,6 +51,8 @@ import router from "./router";
 import { decode } from "html-entities";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { secureStorage } from "./services/secureStorage";
+import { getDeviceUuid } from "./services/deviceId";
 
 function getCompleteSchoolYear(year: number) {
   return year + " - " + (year + 1);
@@ -168,7 +171,7 @@ async function executeLink(
         })
         .catch(fail); // TODO (6): mettere finally che cancella store.state.request e store.state.event e gestire success e fail come promise
     } else {
-      logout();
+      await logout(false);
       router.push({ name: "auth" });
     }
   } else {
@@ -391,12 +394,13 @@ function getNumberSequence(length: number, start = 0) {
   );
 }
 
-function getUserFromToken(token: string) {
+function getUserFromTokens(token: string, refresh_token?: string) {
   const token_obj = JSON.parse(atob(token.split(".")[1]));
 
   return new User({
     id: token_obj._id,
     token: token,
+    refresh_token: refresh_token,
     username: token_obj.username,
     user: token_obj.role,
     expirationDate: token_obj.expirationDate,
@@ -414,12 +418,45 @@ function getDefautlLink(user_role: UserType) {
   };
 }
 
-async function setUser(user: User, default_link: DefaultLink) {
-  for (const key of User.getProperties()) {
-    // TODO (7): trovare alternativa che garantisca persistenza e reattività (es. sistemi a pagamenti visti)
-    sessionStorage.setItem(key, user[key]); // Necessario per la persistenza
+/**
+ * Get or generate device ID for authentication
+ * Returns existing device_uuid from storage or generates a new one
+ */
+async function getOrCreateDeviceUuid(): Promise<string> {
+  // Try to get existing device_uuid from storage
+  let deviceUuid = sessionStorage.getItem("device_uuid");
+
+  if (!deviceUuid) {
+    deviceUuid = await secureStorage.get("device_uuid");
   }
-  await store.dispatch("login", user); // Necessario per la reattività (in caso puntare su questo, ma persistente)
+
+  // If no device_uuid exists, generate a new one
+  if (!deviceUuid) {
+    deviceUuid = await getDeviceUuid();
+
+    // Save to sessionStorage
+    sessionStorage.setItem("device_uuid", deviceUuid);
+    await secureStorage.set("device_uuid", deviceUuid);
+  }
+
+  return deviceUuid;
+}
+
+async function setUser(user: User, default_link: DefaultLink) {
+  const properties = User.getProperties();
+  const deviceUuid = await getOrCreateDeviceUuid();
+
+  for (const key of properties) {
+    const value = user[key];
+    if (value !== undefined) {
+      sessionStorage.setItem(key, String(value));
+    }
+  }
+  sessionStorage.setItem("device_uuid", deviceUuid);
+
+  secureStorage.set("refresh_token", user.refresh_token ?? "");
+
+  await store.dispatch("login", user); // Required for reactivity
   store.state.menuIndex = default_link.index;
 }
 
@@ -462,21 +499,44 @@ function getLearningContexts(
   );
 }
 
-async function logout() {
+async function logout(delete_scure = true) {
   const menu: Menu = store.state.menu;
 
+  if (delete_scure) {
+    // Try to revoke refresh token on backend before clearing local data
+    const refresh_token = await secureStorage.get("refresh_token");
+
+    if (refresh_token) {
+      try {
+        await executeLink("/v1/auth/logout", undefined, undefined, "post", {
+          refresh_token: refresh_token,
+        });
+      } catch (error) {
+        return false;
+      }
+    }
+  }
+
+  // Remove from sessionStorage
   for (const key of User.getProperties()) {
     sessionStorage.removeItem(key);
   }
-  store.state.user = undefined;
   sessionStorage.removeItem("selected_item");
+  sessionStorage.removeItem("device_uuid");
+
+  if (delete_scure) {
+    await secureStorage.remove("refresh_token");
+  }
+
+  store.state.user = undefined;
   menu.index = -1;
 
   await store.dispatch("signalLogin"); // Dummy change to trigger reactive behaviour
   await store.dispatch("logout");
   await store.dispatch("signalLogout");
-}
 
+  return true;
+}
 function isTokenExpired(check_user = false) {
   const user: User | undefined = User.getLoggedUser();
 
@@ -484,6 +544,75 @@ function isTokenExpired(check_user = false) {
     (check_user && user == undefined) ||
     (user != undefined && user.expiration_date <= new Date())
   );
+}
+
+/**
+ * Attempts to refresh the access token using the refresh token
+ * Returns new access token and expiration date if successful, undefined otherwise
+ */
+async function tryRefreshToken(
+  refresh_token: string
+): Promise<UserProps | undefined> {
+  try {
+    return await executeLink(
+      "/v1/auth/refresh",
+      (response) => {
+        if (response.status === 200 && response.data.id) {
+          return {
+            id: response.data.id,
+            username: response.data.username,
+            token: response.data.token,
+            refresh_token: response.data.refresh_token ?? undefined,
+            user: response.data.user as UserType,
+            expirationDate: response.data.expirationDate,
+          } as UserProps;
+        } else {
+          return undefined;
+        }
+      },
+      () => undefined,
+      "post",
+      {
+        refresh_token: refresh_token,
+      }
+    );
+  } catch (error) {
+    return undefined;
+  }
+}
+
+/**
+ * Attempts to restore user session from persistent storage (mobile only)
+ * Returns user and default link if restoration succeeds, undefined otherwise
+ */
+async function tryAutoLogin(): Promise<
+  { user: User; defaultLink: DefaultLink } | undefined
+> {
+  // Try to retrieve user data from persistent storage
+  const refresh_token = await secureStorage.get("refresh_token");
+
+  let default_link: DefaultLink | undefined;
+  let user: User | undefined;
+
+  // Token expired - try to refresh if refresh_token is available
+  if (refresh_token) {
+    const refreshed_user = await tryRefreshToken(refresh_token);
+    if (refreshed_user !== undefined) {
+      user = new User(refreshed_user);
+      default_link = getDefautlLink(user.type);
+    }
+  }
+
+  if (user != undefined && default_link != undefined) {
+    return {
+      user: user,
+      defaultLink: default_link,
+    };
+  }
+
+  // Auto-login failed - perform logout to clear any partial data
+  await logout();
+  return undefined;
 }
 
 function getLocale() {
@@ -1354,9 +1483,12 @@ export {
   getCssVariable,
   getStudyAddressVisualization,
   getNumberSequence,
-  getUserFromToken,
+  getUserFromTokens,
   getDefautlLink,
+  getOrCreateDeviceUuid,
   setUser,
+  tryAutoLogin,
+  tryRefreshToken,
   getBaseUrl,
   getLearningContexts,
   logout,

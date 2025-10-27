@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { getDeviceUuid } from "@/services/deviceId";
 import { CustomElement, TmpList, UserType } from "@/types";
 import { getCurrentElement, getCustomMessage, getIcon } from "@/utils";
 import {
@@ -185,7 +186,9 @@ const params: TmpList<any> = reactive({
   username: "",
   password: "",
 });
-const actual_params: TmpList<any> = {};
+const actual_params: TmpList<any> = {
+  device_uuid: await getDeviceUuid(),
+};
 const alternatives_login: CustomElement[] = [
   {
     //<!-- TODO (5): rendering bottone da telefono non coincide con parte cliccabile
@@ -197,7 +200,7 @@ const alternatives_login: CustomElement[] = [
       text: getCurrentElement("google"),
       order: true,
       whole_link: true,
-      url: "/auth/google",
+      url: `/auth/google?user_uuid=${actual_params.device_uuid}`,
       method: "get",
     },
     ...store.state.button_css,

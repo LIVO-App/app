@@ -11,7 +11,14 @@
     <ion-content :fullscreen="true">
       <inner-header :title="getCurrentElement('auth')" />
 
-      <auth-panel @login="login" @execute_link="googleAuth()" />
+      <suspense>
+        <template #default>
+          <auth-panel @login="login" @execute_link="googleAuth()" />
+        </template>
+        <template #fallback>
+          <loading-component />
+        </template>
+      </suspense>
     </ion-content>
   </ion-page>
 </template>
@@ -68,6 +75,7 @@ const login = async (payload: LoginInformation) => {
               {
                 id: response.data.id,
                 token: response.data.token,
+                refresh_token: response.data.refresh_token,
                 username: payload.parameters.username,
                 user: payload.type,
                 expirationDate: response.data.expirationDate,
@@ -119,6 +127,7 @@ const checkParameters = (
         login_parameters.username = payload.parameters.username;
         login_parameters.password = payload.parameters.password;
       }
+      login_parameters.device_uuid = payload.parameters.device_uuid;
       break;
   }
 };

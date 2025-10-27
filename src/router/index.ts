@@ -5,10 +5,11 @@ import { Menu, User } from "@/types";
 import {
   getBaseUrl,
   getDefautlLink,
-  getUserFromToken,
+  getUserFromTokens,
   isTokenExpired,
   logout,
   setUser,
+  tryAutoLogin,
 } from "@/utils";
 
 const routes: Array<RouteRecordRaw> = [
@@ -167,11 +168,11 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
-  const user = User.getLoggedUser();
+router.beforeEach(async (to) => {
   const menu: Menu = store.state.menu;
   const menu_items = Object.keys(menu.items);
 
+  let user = User.getLoggedUser();
   let selected_item: string, tmp_user: User;
   let default_link = {
     name: "/",
@@ -179,12 +180,19 @@ router.beforeEach((to) => {
   };
 
   if (to.name != undefined) {
-    if (user == undefined) {
+    if (isTokenExpired()) {
+      // TODO (7): quando si avrà lo store sicuro mettere che si può ritornare alla pagina precedente se è lo stesso utente
+      await logout(false);
+      return { name: "auth" };
+    } else if (user == undefined) {
       if (to.name == "google_auth") {
         location.href = getBaseUrl() + "/v1/auth/google";
       } else if (to.name == "google_redirect") {
         if (to.query.token != undefined) {
-          tmp_user = getUserFromToken(to.query.token as string);
+          tmp_user = getUserFromTokens(
+            to.query.token as string,
+            to.query.refresh_token as string
+          );
           default_link = getDefautlLink(tmp_user.type);
           /*await*/ setUser(tmp_user, default_link);
 
@@ -192,13 +200,20 @@ router.beforeEach((to) => {
         } else {
           return { name: "auth" };
         }
-      } else if (to.name !== "auth") {
-        return { name: "auth" };
+      } else if (to.name !== "logout") {
+        const autoLoginResult = await tryAutoLogin();
+
+        if (autoLoginResult) {
+          // Auto-login successful, set user
+          await setUser(autoLoginResult.user, autoLoginResult.defaultLink);
+          user = autoLoginResult.user;
+          default_link = autoLoginResult.defaultLink;
+
+          return { name: default_link.name };
+        } else if (to.name !== "auth") {
+          return { name: "auth" };
+        }
       }
-    } else if (isTokenExpired()) {
-      // TODO (7): quando si avrà lo store sicuro mettere che si può ritornare alla pagina precedente se è lo stesso utente
-      logout();
-      return { name: "auth" };
     } else if (user != undefined) {
       if (
         (to.name !== "auth" &&
@@ -217,7 +232,7 @@ router.beforeEach((to) => {
       ) {
         return false;
       } else if (to.name === "logout") {
-        logout();
+        await logout();
         return { name: "auth" };
       }
     }
