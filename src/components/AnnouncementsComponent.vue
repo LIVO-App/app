@@ -146,7 +146,8 @@ type availableModal =
   | "publish_announcement"
   | "empty_titles_or_messages"
   | "no_selected_sections"
-  | "publish";
+  | "publish"
+  | "error";
 
 const setupModalAndOpen = async () => {
   const window: availableModal = store.state.event.event;
@@ -178,8 +179,11 @@ const setupModalAndOpen = async () => {
           "&session_id=" +
           session_id,
         () => "",
-        (err) => {
-          console.error(err);
+        () => {
+          store.state.event.event = "error";
+          store.state.event.data.message = getCurrentElement("announcement_error");
+          setupModalAndOpen();
+          return "";
         },
         "post",
         {
@@ -199,6 +203,11 @@ const setupModalAndOpen = async () => {
       }
       updateMessages();
       break;
+    case "error":
+      alert_information.title = getCurrentElement("error");
+      alert_information.message = store.state.event.data.message;
+      alert_open.value = true;
+      break;
   }
 };
 const closeModal = (window: availableModal) => {
@@ -208,6 +217,9 @@ const closeModal = (window: availableModal) => {
       break;
     case "publish_announcement":
       publishment_open.value = false;
+      break;
+    case "error":
+      alert_open.value = false;
       break;
   }
 };

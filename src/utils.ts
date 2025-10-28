@@ -177,7 +177,6 @@ async function executeLink(
   } else {
     store.state.request = {};
     return new Promise((resolve, reject) => {
-      console.error("No axios instance or url defined");
       reject(fail("No axios instance or url defined"));
     });
   }

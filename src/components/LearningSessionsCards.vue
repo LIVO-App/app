@@ -237,7 +237,6 @@ if (current_class != undefined) {
             );
           }
         },
-        () => console.error("Learning sessions not retrieved")
       )
     );
   }
@@ -336,8 +335,6 @@ if (current_class != undefined) {
   if (learning_sessions.completed.cards[current_school_year] == undefined) {
     learning_sessions.completed.cards[current_school_year] = [];
   }
-} else {
-  console.error("Connection failed");
 }
 </script>
 

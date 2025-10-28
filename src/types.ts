@@ -5528,7 +5528,7 @@ class SubscriptionsManager {
             }
           }
         },
-        (err) => console.error(err),
+        undefined,
         "post",
         {
           courses: courses_ids,

@@ -768,6 +768,7 @@ export const store = createStore({
           project_class_code_error:
             "Codice classe progetto non valido. Deve essere lungo 8 caratteri",
           new_announcement: "Nuovo annuncio",
+          announcement_error: "Errore durante la pubblicazione dell'annuncio",
           history: "Storico",
           course_details: "Dettagli corso",
           pending_students: "Studenti in attesa",
@@ -1260,6 +1261,7 @@ export const store = createStore({
           project_class_code_error:
             "Invalid project class code. Must be 8 characters long",
           new_announcement: "New announcement",
+          announcement_error: "Error during announcement publishment",
           history: "History",
           course_details: "Course details",
           pending_students: "Pending students",
