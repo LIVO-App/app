@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">LIVOApp</string>
     <string name="title_activity_main">LIVOApp</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="package_name">com.istitutodecarneri.livopath</string>
+    <string name="custom_url_scheme">com.istitutodecarneri.livopath</string>
 </resources>
