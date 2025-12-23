@@ -91,7 +91,7 @@ const props = defineProps({
   },
   disabled: Boolean,
   no_padding: Boolean,
-  //colors: Object as PropType<Colors<GeneralSubElements>>, //<!-- TODO (7): colori
+  //colors: Object as PropType<Colors<GeneralSubElements>>, //<!-- TODO (7): implementare colori
   classes: Object as PropType<Classes<SelectSubElements>>,
 });
 const emit = defineEmits(["update:selected_option"]);

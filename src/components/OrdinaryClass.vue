@@ -692,7 +692,7 @@ if (
     });
   }
 } else {
-  $router.push({ name: "ordinary_classes" }); //<!-- TODO (6): valutare se va bene o mettere solo popup e fare dappertutto
+  $router.push({ name: "ordinary_classes" });
 }
 </script>
 

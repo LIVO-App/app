@@ -100,7 +100,6 @@
                       ) == -1)
                   "
                 />
-                <!-- TODO (9): trovare un modo per rendere la chiamata generale -->
                 <!--<ion-textarea
                   v-else
                   v-model="
@@ -455,7 +454,6 @@
             </ion-row>
           </template>
           <template v-else-if="pages[current_page_index] == 'access_object'">
-            <!-- TODO (4): si è cancellato l'oggetto sbagliato e non è stato ripristinato -->
             <ion-grid>
               <template
                 v-if="
@@ -740,7 +738,7 @@
                         :element="buttons[2]"
                         @signal_event="setupModalAndOpen('teacher_info')"
                       />-->
-                      <!-- TODO (7): decommentare quando ci saranno le info dell'insegnante -->
+                      <!-- TODO (8): decommentare quando ci saranno le info dell'insegnante -->
                     </div>
                     <!--
                       <ion-checkbox
@@ -831,7 +829,7 @@
               >
                 {{ getCurrentElement("propose") }}
               </ion-button>
-              <!-- TODO (5): salvare le cose man mano che vengono messe per visualizzare poi "propose" -->
+              <!-- TODO (5): dopo aver creato il controllo reattivo su campi rimanenti modificare visualizzazione di "propose" rendendola reattiva -->
             </ion-col>
           </ion-row>
           <!--</template>-->
@@ -1371,7 +1369,6 @@ const addTeacher = (
   trigger.value++;
 };
 const addElement = (type: CardsListTypes) => {
-  // TODO (9): trovare pezzi in comune negli switch per semplificare la funzione e la successiva
   switch (type) {
     case "teachings":
       addToSimpleList("teachings");
@@ -1560,7 +1557,7 @@ const edit_course_proposition = async (course_id?: number) => {
         (a: LearningArea) =>
           a.italian_title == course.italian_learning_area &&
           a.english_title == course.english_learning_area
-      ); //<!-- TODO (8): aspettare che Pietro metta id
+      ); //<!-- TODO (8): aggiungere id in backend
       return tmp_area != undefined
         ? tmp_area
         : {
@@ -1575,7 +1572,7 @@ const edit_course_proposition = async (course_id?: number) => {
       project_class = await executeLink(
         "/v1/project_classes/" + course_id + "/" + tmp_session_id,
         (response) => new AdminProjectClass(response.data.data)
-      ); //<!-- TODO (4): dire a Pietro di mettere num_section sia lì che in quella generale
+      ); //<!-- TODO (4): aggiungere parametro num_section a quest'api e a quella generale
       approved.project_class = project_class.admin_id != undefined;
       tmp_teachers = await executeLink(
         "/v1/project_classes/" + course_id + "/" + tmp_session_id + "/teachers",
@@ -1641,7 +1638,6 @@ const edit_course_proposition = async (course_id?: number) => {
 };
 const fillCardsLists = (lists_info: {
   [key in keyof string as PropositionListsKeys]?: {
-    //<!-- TODO (6): guardare se si può mettere CardsListTypes
     clear?: {
       cards?: boolean;
       support_list?: boolean;
@@ -1706,7 +1702,6 @@ const fillCardsLists = (lists_info: {
     }
   }
   for (const learning_context_id in course_proposition.access_object) {
-    //<!-- TODO (9): attenzione, non funziona
     for (const access_object of course_proposition.access_object[
       learning_context_id
     ]) {
@@ -1813,7 +1808,7 @@ const changeModality = (new_action: PropositionActions) => {
           }*/
         },
         () => {
-          //changes_error = true; //<!-- TODO (6): fare "esci senza salvare"
+          //changes_error = true;
           setupModalAndOpen("error", getCurrentElement("changes_not_made"));
         },
         "put",
@@ -2111,7 +2106,7 @@ const study_addresses: {
   selected: {},
 };
 const study_years: {
-  //<!-- TODO (5): mettere elenco check e usare card per study_address con X per ogni classe
+  //<!-- TODO (5): cambiare da lista (attuale) a checkbox. Rispettivamente usare card per ogni study_address e checkbox per ogni classe al suo interno
   available: {
     [key: string]: {
       [key: string]: { id: number }[];
@@ -2197,17 +2192,6 @@ let tmp_teachers: PropositionTeacher[] = [];
 let approve_project_class = true;
 let old_images_names: string[] = [];
 
-/*switch (pages[current_page_index.value]) { //<!-- TODO (6): caricare una volta i vari contenuti
-  case "teaching_list":
-    
-    break;
-  case "access_object":
-  case "teacher_list":
-    
-    break;
-  default:
-    break;
-}*/
 models = await executeLink(
   "/v1/propositions?recent_models=true", //<!-- TODO (5): fare rework recent_models (mettere filtro su tutti i corsi)
   (response) =>
@@ -2227,7 +2211,7 @@ growth_areas.available = await executeLink(
 );
 learning_sessions = await executeLink(
   "/v1/learning_sessions?" +
-    (action.value != "view" ? "future_session=true" : ""), //<!-- TODO (6): aggiungere course_id quando Pietro finisce
+    (action.value != "view" ? "future_session=true" : ""), //<!-- TODO (6): aggiungere course_id quando disponibile per questa api
   (response) => {
     const tmp_learning_sessions: LearningSession[] = [];
 

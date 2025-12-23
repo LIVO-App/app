@@ -72,7 +72,7 @@ function isCard(element: any): element is CardElements {
 }
 
 function isGeneral(element: any): element is GeneralCardElements {
-  return "side_element" in element || !("credits" in element); // TODO (8): vedere se creare un parametro per fare la condizione positiva
+  return "side_element" in element || !("credits" in element); // TODO (8): vedere se aggiungere un parametro per fare la condizione positiva (al posto di negativa con "credits")
 }
 
 function isCourse(element: any): element is EnrollmentCardElements {
@@ -84,7 +84,7 @@ function isOrderedCardList(element: any): element is OrderedCardsList {
 }
 
 function isCardLists(element: any): element is TmpList<CardsList> {
-  const first_key = Object.keys(element)[0]; // TODO (6): non è detto che la prima lista abbia una carta.
+  const first_key = Object.keys(element)[0]; // TODO (6): fare controllo safe anche per lista vuota
   const second_key =
     first_key != undefined ? Object.keys(element[first_key])[0] : undefined;
 
@@ -169,7 +169,7 @@ async function executeLink(
           }
           return success(response);
         })
-        .catch(fail); // TODO (6): mettere finally che cancella store.state.request e store.state.event e gestire success e fail come promise
+        .catch(fail); // TODO (6): mettere finally che pulisce store.state.request e store.state.event
     } else {
       await logout(false);
       router.push({ name: "auth" });
@@ -183,6 +183,7 @@ async function executeLink(
 }
 
 function getCurrentElement(key: string) {
+  // TODO (4): aggiungere parametri da inniettare
   const language: Language = getCurrentLanguage();
   const elements: ElementsList = store.state.elements;
 
@@ -859,7 +860,7 @@ function getContextAcronym(option: LearningContext) {
 }
 
 function hexToRGB(hex: string) {
-  // TODO (5): rendere più generale
+  // TODO (6): rendere più generale
 
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -909,7 +910,7 @@ function getCssColor(color_object: ColorObject, use_alpha = true) {
         color_object.alpha +
         ")"; // RGBA
     } else {
-      // TODO (5): cercare un modo per tradurre text in rgb per fare versione con alpha
+      // TODO (5): cercare un modo per tradurre text (red, ...) in rgb per fare versione con alpha
       color = color_object.name;
     }
   }
@@ -927,7 +928,6 @@ function getIonicColor(color: ColorObject | undefined) {
 }
 
 function setupError(message?: string) {
-  // TODO (5): Mettere un unico in App.vue e uniformare il sistema
   const alert_information: AlertInformation = store.state.alert_information;
 
   alert_information.title = getCurrentElement("error");
@@ -1407,7 +1407,6 @@ function getCardValues(
   container_width: number,
   breakpoints: Breakpoint[] | undefined = undefined
 ) {
-  // TODO (5): da eliminare dopo aver creato variabile comune per input da visualizzare in breakpoint diversi
   const actual_breakpoint = getBreakpoint(container_width);
   const card_values: {
     [key: string]: any;

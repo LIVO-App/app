@@ -133,7 +133,7 @@
       </template>
       <template v-else>
         <!--<h2>-->
-        <!-- TODO (5): ingrandire titolo (magari mettendo un parametro per i gradi) -->
+        <!-- TODO (5): ingrandire titolo (magari mettendo un parametro per i gradi, es. h1, h2, ...) -->
         <b>{{ element.content }}</b>
         <!--</h2>-->
       </template></ion-label
@@ -145,7 +145,6 @@
       :color="getIonicColor(element.colors?.text)"
       :class="actual_classes.icon"
     />
-    <!-- TODO (6): mettere il colore alle icone -->
     <ion-item
       v-else-if="element.type == 'string_icon'"
       :lines="element.colors?.borders != undefined ? 'inset' : 'none'"
@@ -527,6 +526,7 @@ const border_radius = props.element.params?.border_radius ?? "0px";
 
 const breakpoint = ref(getBreakpoint(window.innerWidth));
 
+// <!-- TODO (7): vedere se aggiungere stili (bold, italic, ...) su parti parziali del testo o lasciare che si faccia con html
 const actual_classes: Classes<SubElements, boolean> = reactive({
   label: {
     textColor: props.element.colors?.text != undefined,
@@ -562,7 +562,6 @@ const actual_classes: Classes<SubElements, boolean> = reactive({
     "ion-no-padding": props.element.params?.type == "password",
   },
   input: {
-    // <!-- TODO (5): mette le classi in props.element.classes?.input, ma non funzionano (anche checkbox)
     customText: props.element.colors?.text != undefined,
     customBackground: css_background_color != undefined,
     customBorders: css_borders_color != undefined || border_radius != "0px",

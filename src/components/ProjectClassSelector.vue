@@ -112,7 +112,6 @@
         </ion-col>
       </ion-row>
       <ion-row>
-        <!-- TODO (4): remove visualization of PERSONAL context and similar -->
         <ion-col>
           <ionic-element
             :element="
@@ -186,7 +185,7 @@
       <ion-row>
         <ion-col :key="trigger">
           <div>
-            <!-- TODO (4): add only visualization to tutor -->
+            <!-- TODO (4): aggiungere visualizzazione personalizzata per tutor -->
             <ionic-table
               :key="trigger"
               :emptiness_message="
@@ -469,7 +468,9 @@ const colors: Colors<GeneralSubElements> = {
     type: "var",
   },
 };
-const column_sizes = store.state.sections_use ? ["2", "2", "5", "2", "1"] : ["2", "2", "6", "2"];
+const column_sizes = store.state.sections_use
+  ? ["2", "2", "5", "2", "1"]
+  : ["2", "2", "6", "2"];
 const project_class_card =
   props.project_class != undefined
     ? props.project_class.toCard(undefined, props.section, false, true)
@@ -522,7 +523,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
   learning_contexts = await getLearningContexts(
     student,
     "" + actual_learning_session.id
-  ); //<!-- TODO (6): sistemare id (es. tutti stringa)
+  ); //<!-- TODO (6): rendere id tutti dello stesso tipo (es. tutti stringa)
   learning_areas_structures = await getLearningAreasStructures(
     learning_contexts,
     "" + actual_learning_session.id
@@ -568,7 +569,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
         let tmp_course: EnrollmentCourse;
         for (const course_props of response.data
           .data as EnrollmentCourseProps[]) {
-          course_props.section = "A"; //<!-- TODO (4): gestire sezioni
+          course_props.section = "A"; //<!-- TODO (4): gestione sezioni dinamica
           tmp_course = new EnrollmentCourse(course_props);
           if (tmp_course.final_confirmation == null) {
             tmp_courses.push(tmp_course);

@@ -1,5 +1,4 @@
 <template>
-  <!-- TODO (6): dare un'colori a fissi -->
   <ion-card
     :color="
       selected

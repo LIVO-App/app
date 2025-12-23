@@ -51,6 +51,7 @@
           </ion-list>
         </ion-content>
       </ion-menu>
+      <!-- TODO (5): creare gestore delle finestre di alert unico e raccogliere tutti gli elementi ion-alert con AlertInformation e simili -->
       <ion-router-outlet id="main-content"></ion-router-outlet>
     </ion-split-pane>
   </ion-app>

@@ -117,7 +117,7 @@ const css_hover_color =
 const css_background_color =
   props.colors?.background != undefined
     ? getCssColor(props.colors.background)
-    : undefined; //<!-- TODO (6): valutare colore separato per ion-item
+    : undefined;
 
 const breakpoint = ref(getBreakpoint(window.innerWidth));
 const card_ref = ref(props.card);

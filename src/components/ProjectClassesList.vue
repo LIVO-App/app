@@ -127,7 +127,6 @@
               : undefined
           "
         />
-        <!-- TODO (5): capire perchè con 5 si crea uno spazio inutilizzabile in fondo -->
       </ion-col>
     </ion-row>
   </ion-grid>
@@ -272,7 +271,6 @@ const getCourses = async () =>
             let tmp_card: GeneralCardElements;
             if ($route.name == "announcements") {
               tmp_card = new MinimizedCourse(a as MinimumCourseProps).toCard(
-                //<!-- TODO (5): finire
                 "/announcements/" +
                   (a as MinimumCourseProps).id +
                   "/" +

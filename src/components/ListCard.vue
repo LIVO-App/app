@@ -129,7 +129,6 @@
                 class="ion-no-padding"
               >
                 <ionic-element v-model:element="emptiness_message_ref" />
-                <!-- TODO (4): aggiungere eventi -->
               </ion-item>
               <template v-else>
                 <cards-grid

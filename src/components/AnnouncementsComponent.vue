@@ -166,7 +166,7 @@ const setupModalAndOpen = async () => {
       alert_information.message = getCurrentElement("empty_titles_or_messages");
       alert_open.value = true;
       break;
-    case "no_selected_sections": //<!-- TODO (5): non ha funzionato
+    case "no_selected_sections": //<!-- TODO (7): non ha funzionato
       alert_information.message = getCurrentElement("no_selected_sections");
       alert_open.value = true;
       break;
@@ -181,7 +181,8 @@ const setupModalAndOpen = async () => {
         () => "",
         () => {
           store.state.event.event = "error";
-          store.state.event.data.message = getCurrentElement("announcement_error");
+          store.state.event.data.message =
+            getCurrentElement("announcement_error");
           setupModalAndOpen();
           return "";
         },

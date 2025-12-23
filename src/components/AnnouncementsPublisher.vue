@@ -28,7 +28,6 @@
         fill="outline"
         class="ion-margin-vertical"
       />
-      <!-- TODO (4): mettere italiano e inglese riutilizzando i componenti -->
       <ion-input
         type="text"
         v-model="italian_message"

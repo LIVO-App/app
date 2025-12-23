@@ -1,5 +1,5 @@
 <template>
-  <!-- TODO (5): vedere discorso bocciature e discorso collegamento albero tra corsi con Pietro -->
+  <!-- TODO (5): sistemare questione bocciature sul singolo corso utilizzando il sistema dei collegamenti ad albero/id_corso tra corsi: associare ad ogni corso un corso collegato (automatio tramite modello o manuale), o definire come originale, per poter raggruppare varie versioni di uno stesso corso e considerarle come lo stesso, in modo tale che si possa implementare un sistema per capire se uno studente ha partecipato a quel determinato corso (o ad una delle sue varianti) -->
   <div class="ion-padding-horizontal">
     <ion-modal
       id="grades_manager"
@@ -101,7 +101,6 @@
             :aria_label="getCurrentElement('school_year')"
             :placeholder="getCurrentElement('school_year_choice')"
           />
-          <!-- TODO (6): aggiungere "All" -->
         </ion-col>
         <ion-col size="auto">
           <custom-select
@@ -376,18 +375,17 @@ if (sections_use) {
   });
 }
 
-school_years =
-  await executeLink(
-        "/v1/ordinary_classes?descending=true&student_id=" + user.id,
-        (response) => {
-          return response.data.data.map((a: any) => {
-            return {
-              id: a.school_year,
-            };
-          });
-        },
-        () => []
-      );
+school_years = await executeLink(
+  "/v1/ordinary_classes?descending=true&student_id=" + user.id,
+  (response) => {
+    return response.data.data.map((a: any) => {
+      return {
+        id: a.school_year,
+      };
+    });
+  },
+  () => []
+);
 learning_contexts = await getLearningContexts(user);
 learning_areas = await executeLink(
   "/v1/learning_areas?all_data=true",

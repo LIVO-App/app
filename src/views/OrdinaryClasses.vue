@@ -7,7 +7,6 @@
       <suspense>
         <template #default>
           <project-classes-list />
-          <!-- TODO (5): cambiare nome componente -->
         </template>
         <template #fallback>
           <loading-component />

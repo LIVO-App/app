@@ -528,15 +528,11 @@ let to_edit: Grade;
 await setGradesTable();
 watch(
   () => store.state.triggers.grades,
-  () => {
-    setGradesTable(); //<!-- TODO (5): guardare se fa richieste per niente quando viene eliminato un voto o simile (dato che ha già la roba sistemata), valutando ache aggiornamenti da altri professori (cosa simile in project class)
-  }
+  () => setGradesTable()
 );
 watch(
   () => store.state.triggers.edit_grades,
-  () => {
-    setGradesTable(true);
-  }
+  () => setGradesTable(true)
 );
 </script>
 

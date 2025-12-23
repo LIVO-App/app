@@ -25,7 +25,7 @@ import { IonContent, IonPage } from "@ionic/vue";
 const user = User.getLoggedUser() as User;
 
 const title = getPageTitle(user);
-//<!-- TODO (8): vedere se si può caricare diversi componenti con uno solo per rimuovere tutte le view con componente singolo
+//<!-- TODO (8): valutare se caricare diversi componenti con uno solo per creare una singola pagina view
 </script>
 
 <style scoped></style>

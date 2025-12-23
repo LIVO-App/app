@@ -296,7 +296,7 @@ const getFlatLayoutIndexes = (
 };
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
-  trigger.value++; // TODO (5): da vedere se si trova metodo migliore (es. breackpoint aggiornato in store)
+  trigger.value++; // <!-- TODO (5): da vedere se si trova metodo migliore,cresponsivo e condiviso (es. breakpoint aggiornato in store o computed in App.vue)
 };
 const isCellCentered = (
   key: string | number,

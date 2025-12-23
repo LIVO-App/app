@@ -172,7 +172,7 @@ export const store = createStore({
           },
           learning_sessions_management: {
             url_names: {
-              admin: ["learning_sessions_management"], // TODO (8*): non è detto che userò questa pagina, dato che non c'è una seconda lista
+              admin: ["learning_sessions_management"],
             },
             icon_ref: "calendar",
           },
@@ -192,7 +192,6 @@ export const store = createStore({
             },
           },
           settings: {
-            // TODO (4): Fare pagina settings e profilo
             url_names: {
               student: ["settings"],
               teacher: ["settings"],
@@ -208,15 +207,14 @@ export const store = createStore({
             },
             icon_ref: "person",
           },
-          logout: {
-            // TODO (5): spostare in profilo quando verrà creato
-            url_names: {
-              student: ["logout"],
-              teacher: ["logout"],
-              admin: ["logout"],
-            },
-            icon_ref: "logout",
-          },
+          // logout: {
+          //   url_names: {
+          //     student: ["logout"],
+          //     teacher: ["logout"],
+          //     admin: ["logout"],
+          //   },
+          //   icon_ref: "logout",
+          // },
           info: {
             url_names: {
               student: ["info"],
@@ -227,6 +225,7 @@ export const store = createStore({
           },
         },
         order: {
+          // TODO (4): finire funzionalità
           student: [
             "learning_sessions",
             "announcements",
@@ -247,7 +246,6 @@ export const store = createStore({
             //"info",
           ],
           admin: [
-            // TODO (4): fare funzionalità admin
             "project_courses",
             "ordinary_classes",
             "course_proposals",
@@ -392,6 +390,7 @@ export const store = createStore({
       languages: ["italian", "english"],
       language: "italian",
       elements: {
+        // TODO (4): portare su db
         italian: {
           credits_constraints: "Vincoli crediti",
           session: "Sessione",
@@ -656,7 +655,7 @@ export const store = createStore({
           project_class_successful_confirmation:
             "Classe progetto confermata con successo",
           students_number_error:
-            "Il numero di studenti non rispetta i limiti rispettati dal corso", // TODO (4): mettere lista parametri a getCurrentElement
+            "Il numero di studenti non rispetta i limiti rispettati dal corso",
           final_confirmation: "Conferma finale classe progetto",
           project_class_status: "Stato classe progetto",
           project_class_confirmation_date:
@@ -1376,11 +1375,11 @@ export const store = createStore({
       event: {},
       hours_per_credit: 6,
       grades_scale: grades_scale,
-      excluded_learning_contexts_id: ["ECA"], // TODO (9): mettere referenza a contesto di apprendimento
+      excluded_learning_contexts_id: ["ECA"],
       main_learning_context: {
         id: "SPE",
         credits: null,
-      }, // TODO (9): mettere referenza a contesto di apprendimento
+      },
       courses_per_group: 1,
       year_module: 100,
       static_subscription: true,

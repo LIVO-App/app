@@ -332,7 +332,6 @@ type AvailableModal =
   | "error";
 
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
-  //<!-- ! (3): è possibile dare voti in una sessione futura (forse problema su utilizzo sessioni rimaneggiate)
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
 
@@ -639,7 +638,6 @@ const updateStudents = async () => {
 
   table_data.cards[""] = [];
   for (const student_index in students) {
-    //<!-- TODO (5): controllare se ci sono più professori e fare richieste voti solamente sul pulsante (evitare problema di professore che aggiunge mentre altro è nella pagina)
     tmp_student = students[student_index];
     if (user.type == "teacher") {
       grades[tmp_student.id] = await executeLink(
@@ -693,7 +691,6 @@ const updatePendingStudents = async () => {
 
   pending_table_data.cards[""] = [];
   for (const student_index in pending_students) {
-    //<!-- TODO (5): controllare se ci sono più professori e fare richieste voti solamente sul pulsante (evitare problema di professore che aggiunge mentre altro è nella pagina)
     tmp_student = pending_students[student_index];
     pending_table_data.cards[""].push(
       tmp_student.toTableCard(
@@ -869,7 +866,7 @@ const yes_handler = async () => {
             ? edits_props.publication
             : undefined,
         };
-        //<!-- TODO (6): modificare quando ci sarà coerenza nei parametri
+        //<!-- TODO (6): utilizzare ciclo quando ci sarà coerenza nei parametri
         /*for (const key in edits_to_send) {
           if (edits_to_send[key]) {
             body[key] = edits_props[key];
@@ -1316,7 +1313,7 @@ const buttons: CustomElement[] = [
     content: {
       event: "course_details",
       data: {
-        title: "", //<!-- TODO (4): mettere titolo quando ce l'avrà anche la pagina
+        title: "", //<!-- TODO (5): mettere titolo pagina
         course_id: parseInt(course_id),
       },
       icon: getIcon("information_circle"),
@@ -1498,7 +1495,7 @@ watch(students_update, async () => {
 <style>
 ion-modal#grades_manager {
   --width: 90%;
-  --height: 60%; /* <!-- TODO (4): auto fa collassare ion-content */
+  --height: 60%; /* <!-- TODO (6): auto fa collassare ion-content */
 }
 
 ion-modal#multiple_grades_manager {

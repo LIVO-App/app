@@ -133,7 +133,7 @@ class OrdinaryClassSummary {
 
 type OrdinaryClassProps = {
   annual_credits_ref?: ResponseItem<AnnualCredits>;
-  english_displayed_name: string; // TODO (8): sistemare visualizzazione nome classe
+  english_displayed_name: string;
   italian_displayed_name: string;
   school_year: number;
   study_address_ref: ResponseItem<{
@@ -146,7 +146,7 @@ type OrdinaryClassProps = {
 
 class OrdinaryClass extends OrdinaryClassSummary {
   annual_credits?: AnnualCredits;
-  english_displayed_name?: string; // TODO (8): sistemare visualizzazione nome classe
+  english_displayed_name?: string;
   italian_displayed_name?: string;
 
   constructor(classObj: OrdinaryClassProps, section?: string) {
@@ -220,7 +220,7 @@ class OrdinaryClass extends OrdinaryClassSummary {
             radius: true,
           },
         }
-      ), // ! (3): mettere in content e adattare
+      ), // TODO (4): spostare elemento in "content" adattandolo
       selected: selected,
       link:
         path != undefined
@@ -265,7 +265,7 @@ class Enrollment {
   set enrollment(enrollment: Date | boolean) {
     if (!(enrollment instanceof Date && isNaN(enrollment.getTime()))) {
       this._enrollment = enrollment;
-    } // TODO (9): pensare se mettere "else false" (sfruttabile per perdita di dati)
+    } // TODO (9): pensare se mettere "else return false" (sfruttabile per perdita di dati)
   }
   get editable(): boolean {
     return this._editable;
@@ -531,8 +531,8 @@ class CourseBase {
     this.credits = courseObj.credits;
     this.learning_area_id = (
       courseObj.learning_area_ref.data as { id: string }
-    ).id; // TODO (6): in /courses/:id vengno dati solo i titoli e non l'id
-    this.italian_title = courseObj.italian_title; // TODO (8): sistemare lingue mettendo get
+    ).id;
+    this.italian_title = courseObj.italian_title;
     this.english_title = courseObj.english_title;
   }
 
@@ -870,7 +870,6 @@ class CurriculumCourse extends CourseBase {
     student_id: number,
     teacher_id?: number
   ): GeneralTableCardElements {
-    // TODO (7): valutare se unire a toCard, visto che il tipo di dato è diventato lo stesso
     const language = getCurrentLanguage();
     const tmp_content: ContentType = {
       event: "grades",
@@ -939,7 +938,7 @@ class CurriculumCourse extends CourseBase {
             getCurrentElement("learning_area") + ": " + this.learning_area_id,
         },
         {
-          id: "gardes", // TODO (4): mettere il controllo con future_course al passaggio a curriculum_v2
+          id: "gardes",
           type: "icon",
           linkType: "event",
           content: tmp_content,
@@ -1021,7 +1020,7 @@ class Course extends CourseBase {
   admin_confirmation?: string;
   italian_expected_learning_results: string;
   english_expected_learning_results: string;
-  italian_criterions: string; // TODO (7): vedere se conviene raggruppare le cose con le lingue in oggetti, per poter rendere più facile l'aggiunta di lingue
+  italian_criterions: string; // TODO (8): raggruppare le variabili con le lingue (nei vari oggetti del codice) in oggetti, per poter rendere più facile l'aggiunta di lingue
   english_criterions: string;
   italian_activities: string;
   english_activities: string;
@@ -1383,7 +1382,7 @@ class Course extends CourseBase {
             "<b>" +
             getCurrentElement("learning_area") +
             "</b>: " +
-            this[`${language}_learning_area`], // TODO (8): mettere grasseto dentro
+            this[`${language}_learning_area`],
         },
         {
           id: this.id + "_credits",
@@ -1498,7 +1497,7 @@ class LearningSessionSummary {
 }
 
 class LearningSession extends LearningSessionSummary {
-  // TODO (4): sistema numero-anno dove visualizzo solo ID
+  // TODO (4): visualizzare numero-anno dove visualizzo solo ID
 
   start: Date;
   end: Date;
@@ -1778,11 +1777,11 @@ class LearningSession extends LearningSessionSummary {
           ? [
               {
                 id: "open_day",
-                type: "string",
+                type: "string", // TODO (4): cambiare "string" in "title"  nei titoli rimanenti
                 content:
                   getCurrentElement("open_day") +
                   ": " +
-                  toDateString(this.open_day), // TODO (4): sistemare titoli che appaiono più piccoli, cambiando il tipo in "title"
+                  toDateString(this.open_day),
               },
               {
                 id: "description",
@@ -2132,7 +2131,7 @@ type StringIcon = {
 };
 
 type RequestParameters = {
-  url: string; // TODO (6): cambiare in Url o RouteLocationRaw (o simile)
+  url: string; // TODO (6): cambiare tipo in Url o RouteLocationRaw (o simile)
   method: Method;
 };
 
@@ -2183,7 +2182,7 @@ type OrderedCardsList<T extends CardElements = CardElements> = {
     key: string | number;
     title: CustomElement;
   }[];
-  cards: CardsList<T>; // TODO (6): mettere classes e colors per dividers e forse per tutta la lista
+  cards: CardsList<T>;
 };
 
 type ElementType =
@@ -2219,7 +2218,7 @@ type ColorObject = {
   type: ColorType;
 };
 
-type GeneralSubElements = "text" | "background" | "borders" | "hover"; // TODO (6): Valutare se generalizzare con string qui e su classi
+type GeneralSubElements = "text" | "background" | "borders" | "hover";
 
 type IonInputSubElements = "placeholder";
 
@@ -2239,7 +2238,7 @@ type GeneralCardSubElements =
   | "external_borders"
   | "cards_borders"
   | "list_borders"
-  | "dividers"; // TODO (6): Mettere hover dove necessario
+  | "dividers";
 
 type SubElements =
   | "label"
@@ -2291,7 +2290,7 @@ type Classes<
 };
 
 type CustomElement = {
-  // TODO (6): togliere type e usare funzioni is... o roba tipo CustomElement<T>
+  // TODO (6): togliere type e usare funzioni is... per valutare tipo o tipi template CustomElement<T>
   id: string;
   type: ElementType;
   linkType?: LinkType;
@@ -2903,7 +2902,6 @@ class ProjectClassStudent extends StudentSummary {
     linked_input = false,
     index?: number
   ): GeneralTableCardElements {
-    // TODO (7): usare AdminProjectClassProps quando verrà cambiato nome e sistemato in giro
     const row_to_return = super.toTableCard(index);
 
     let tmp_content: ContentType, actual_final_grade: string, tmp_len: number;
@@ -2986,7 +2984,7 @@ class ProjectClassStudent extends StudentSummary {
 
       row_to_return.content.push(
         {
-          id: "grades", // TODO (4): Mettere il controllo con future_course al passaggio a curriculum_v2
+          id: "grades", // TODO (4): Aggiungere controllo su future_course (dice se è corso futuro) di curriculum_v2 (e altre api che lo implementano) per evitare inserimento di voto per corsi futuri
           type: "icon",
           linkType: "event",
           content: tmp_content,
@@ -3414,7 +3412,7 @@ type UserProps = UserSummaryProps & {
   token: string;
   refresh_token?: string;
   expirationDate: string;
-  // TODO (4): mettere first_access
+  // TODO (4): implementare first_access (api di login) per cambio/inserimento password
 };
 
 class UserSummary {
@@ -3612,7 +3610,7 @@ class CourseModel {
       this.learning_session = await executeLink(
         "/v1/learning_sessions/" + this.learning_session.id,
         (response) => new LearningSessionSummary(response.data.data)
-      ); // TODO (4): mettere alternativa dove vengono passati i parametri al costruttore per diminuire il numero di richieste
+      );
     }
   }
 
@@ -3636,7 +3634,6 @@ class CourseModel {
   }
 
   toCard(user: User, view = false): GeneralCardElements {
-    // TODO (5): evidenziare quando project_class_to_be_modified | course_to_be_modified
     const language = getCurrentLanguage();
 
     let project_class = "<label>" + getCurrentElement("project_class") + ":";
@@ -3687,7 +3684,7 @@ class CourseModel {
               (this.learning_session != undefined
                 ? "_" + this.learning_session.id
                 : "")
-            : ""), // TODO (6*): mettere guardia che sistema il link, salvando le cose sulla sessione
+            : ""),
         method: "get",
       },
     };
@@ -3941,7 +3938,7 @@ class ModelProposition {
     if (empty_proposition) {
       this._remaining = ModelProposition.getProps();
     } else {
-      this._remaining = []; // TODO (4): check remaining (usare sessione per persistenza)
+      this._remaining = []; // TODO (4): aggiungere controllo reattivo su campi rimanenti da compilare
     }
   }
 
@@ -4340,7 +4337,7 @@ class ModelProposition {
         },
         {
           rule: (proposition: PropositionObj) =>
-            proposition.max_students - proposition.min_students >= 6, // TODO (6): Attenzione, diverso da backend. Sistemare con settings comuni
+            proposition.max_students - proposition.min_students >= 6, // TODO (6): Attenzione, numero diverso da backend (questo più aggiornato)
           error_message: getCurrentElement("min_max_error"),
           valid: ["propose"],
         },
@@ -4411,10 +4408,10 @@ class ModelProposition {
   }
 
   check(action: PropositionActions) {
-    const required_information = ModelProposition.getRequiredInformation(); // TODO (5): trovare un modo per dare un ordine
+    const required_information = ModelProposition.getRequiredInformation();
     const proposition = this.toProposition();
     const missing_information: {
-      [key in keyof string as PropositionRequiredKeys]?: string; // TODO (6): mettere messaggi multipli per singolo campo
+      [key in keyof string as PropositionRequiredKeys]?: string;
     } = {};
 
     let len: number;
@@ -4483,7 +4480,7 @@ class ModelProposition {
 type TitleDescription = {
   [key in keyof string as `${Language}_title`]: string;
 } & {
-  [key in keyof string as `${Language}_description`]?: string; // TODO (4): vedere descrizioni che possono essere null
+  [key in keyof string as `${Language}_description`]?: string;
 };
 
 type GrowthAreaProps = {
@@ -4797,7 +4794,6 @@ class TeacherProposition {
 
   toCard(disabled = false): GeneralCardElements {
     const card: GeneralCardElements = {
-      // TODO (6): sistemare roba undefined
       id: "" + this.teacher.id,
       group: "",
       side_element: disabled
@@ -4827,7 +4823,7 @@ class TeacherProposition {
             text: this.teacher.name + " " + this.teacher.surname, // + (this.main ? " [" + getCurrentElement("main_teacher") + "]" : "")
           },*/
           content: this.teacher.name + " " + this.teacher.surname,
-        }, // TODO (6): creare info teacher
+        },
       ],
     };
     if (store.state.sections_use) {
@@ -4870,7 +4866,7 @@ type ProjectClassSummaryProps = {
 };
 
 type AdminProjectClassProps = ProjectClassSummaryProps & {
-  // TODO (7): cambiare nome, dato che possono accederci tutti
+  // TODO (7): generalizzare nome, dato che possono accederci tutti
   teacher_ref: ResponseItem<{
     id: number;
   }>;
@@ -4999,7 +4995,7 @@ class ProjectClassSummary {
           " - " +
           this.learning_session.school_year +
           "/" +
-          ((this.learning_session.school_year % store.state.year_module) + 1) + // TODO (4): modificare tutti gli anni scolastici per la visualizzazione
+          ((this.learning_session.school_year % store.state.year_module) + 1) +
           ") - " +
           this.group +
           (section != undefined ? " - " + section : ""),
@@ -5074,7 +5070,6 @@ class AdminProjectClass extends ProjectClassSummary {
     show_project_class_code = true,
     user?: User
   ): GeneralCardElements {
-    // TODO (5): evidenziare quando project_class_to_be_modified | course_to_be_modified
     const tmp_card: GeneralCardElements = super.toCard(
       path,
       section,
@@ -5241,7 +5236,6 @@ type DefaultLink = {
 };
 
 type AlertInformation = {
-  // TODO (9): trovare gli altri posti dove metterlo
   title: string;
   message: string;
   buttons: (string | AlertButton)[];
@@ -5267,8 +5261,6 @@ type CourseReferences = {
 };
 
 class SubscriptionsManager {
-  // TODO (4): fare tutte combinazioni tra mode e visualization_type e tenere conto anche dell'utente per risultato carta/riga
-  // TODO (4): rifare tutto questo sistema andando a cambiare il funzionamento della tabella in modo tale che sia un array di oggetti o simile ([{row_id,row,enrollment}]) e diventi simile alle card
   private _mode: SubscriptionsManagerMode;
   private _all_courses: TmpList<CardsList<EnrollmentCardElements>>;
   private _courses: OrderedCardsList<EnrollmentCardElements>;
@@ -5346,7 +5338,6 @@ class SubscriptionsManager {
     learning_session_id: string
   ) {
     // TODO (5): mettere parametro data_loaded per bloccare azioni senza aver caricato dati
-    // TODO (5): mettere facoltativi parametri per il move
     const learning_session_position = learning_sessions.findIndex(
       (a) => a.id == parseInt(learning_session_id)
     );
@@ -5360,7 +5351,7 @@ class SubscriptionsManager {
       learning_context_id: string,
       learning_area_id: string | null;
 
-    this.reset(); // TODO (6): vedere quando non fare (tradeoff richieste-aggiornamento)
+    this.reset();
     if (learning_session != undefined) {
       this.learning_contexts = learning_contexts;
 
@@ -5870,8 +5861,7 @@ class SubscriptionsManager {
               card.content[3].colors = card.enrollment.getChangeButtonColors();
             }
           } else {
-            card.enrollment.editable = false; // ? chiedere se in backend, quando è presente il corso per due contesti, c'è il controllo che non sia iscritto nell'altro contesto
-            // TODO (5): forse sbagliato, visto che si fa sempre riferimento a course
+            card.enrollment.editable = false; // ? TODO (5): chiedere se in backend, quando è presente il corso per due contesti, c'è il controllo che non sia iscritto nell'altro contesto
           }
 
           this.updateCourse(

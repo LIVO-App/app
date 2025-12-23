@@ -213,7 +213,7 @@ type AvailableModal =
   | "wrong_subscription"
   | "unauthorized_operation"
   | "error";
-//| "general_error"; //<!-- TODO (4): put general error with refresh button
+//| "general_error";
 
 const changeEnrollment = async () => {
   const requestArray = store.state.request.url.split("?"); //<!-- TODO (9): usare classe URL
