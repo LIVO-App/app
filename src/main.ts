@@ -7,46 +7,45 @@ import { quillEditor } from "vue3-quill";
 
 import { IonicVue } from "@ionic/vue";
 
-import OuterHeader from "./components/OuterHeader.vue";
-import InnerHeader from "./components/InnerHeader.vue";
-import LearningSessionsCards from "./components/LearningSessionsCards.vue";
-import ListCard from "./components/ListCard.vue";
-import GeneralCard from "./components/GeneralCard.vue";
-import LoadingComponent from "./components/LoadingComponent.vue";
-import SessionDescription from "./components/SessionDescription.vue";
-import CoursesSelectionList from "./components/CoursesSelectionList.vue";
-import CustomSelect from "./components/CustomSelect.vue";
-import CourseCard from "./components/CourseCard.vue";
-import CurriculumList from "./components/CurriculumList.vue";
-import IonicElement from "./components/IonicElement.vue";
-import IonicTable from "./components/IonicTable.vue";
-import GradesManager from "./components/GradesManager.vue";
-import CourseDescription from "./components/CourseDescription.vue";
-import LearningSessionsSelection from "./components/LearningSessionsSelection.vue";
-import ProjectClass from "./components/ProjectClass.vue";
-import AnnouncementsComponent from "./components/AnnouncementsComponent.vue";
-import AnnouncementViewer from "./components/AnnouncementViewer.vue";
-import AnnouncementsPublisher from "./components/AnnouncementsPublisher.vue";
-import ProjectClassesList from "./components/ProjectClassesList.vue";
-import ProjectClassSelectList from "./components/ProjectClassSelectList.vue";
-import UserDescription from "./components/UserDescription.vue";
-import OverallStudentDescription from "./components/OverallStudentDescription.vue";
-import AuthPanel from "./components/AuthPanel.vue";
-import CourseProposition from "./components/CourseProposition.vue";
-import PropositionsHistory from "./components/PropositionsHistory.vue";
-import CardItem from "./components/CardItem.vue";
-import GroupList from "./components/GroupList.vue";
-import CardsGrid from "./components/CardsGrid.vue";
-import EditorWrapper from "./components/EditorWrapper.vue";
-import ProjectClassSelector from "./components/ProjectClassSelector.vue";
-import OrdinaryClass from "./components/OrdinaryClass.vue";
-import MultipleGradesManager from "./components/MultipleGradesManager.vue";
-import ImageUploader from "./components/ImageUploader.vue";
-import ImageCarousel from "./components/ImageCarousel.vue";
-import SimpleAdder from "./components/SimpleAdder.vue";
-import OrdinaryClassesManager from "./components/OrdinaryClassesManager.vue";
-import OrdinaryClassPeopleAdder from "./components/OrdinaryClassPeopleAdder.vue";
-import LearningSessionsManager from "./components/LearningSessionsManager.vue";
+import OuterHeader from "./components/layout/OuterHeader.vue";
+import InnerHeader from "./components/layout/InnerHeader.vue";
+import LearningSessionsCards from "./components/learning_sessions/LearningSessionsCards.vue";
+import ListCard from "./components/cards/ListCard.vue";
+import GeneralCard from "./components/cards/GeneralCard.vue";
+import LoadingComponent from "./components/layout/LoadingComponent.vue";
+import SessionDescription from "./components/learning_sessions/SessionDescription.vue";
+import CoursesSelectionList from "./components/courses/CoursesSelectionList.vue";
+import CustomSelect from "./components/elements/CustomSelect.vue";
+import CourseCard from "./components/cards/CourseCard.vue";
+import CurriculumList from "./components/courses/CurriculumList.vue";
+import IonicElement from "./components/elements/IonicElement.vue";
+import IonicTable from "./components/cards/IonicTable.vue";
+import GradesManager from "./components/grades/GradesManager.vue";
+import CourseDescription from "./components/courses/CourseDescription.vue";
+import LearningSessionsSelection from "./components/learning_sessions/LearningSessionsSelection.vue";
+import ProjectClass from "./components/classes/project/ProjectClass.vue";
+import AnnouncementsComponent from "./components/announcements/AnnouncementsComponent.vue";
+import AnnouncementViewer from "./components/announcements/AnnouncementViewer.vue";
+import AnnouncementsPublisher from "./components/announcements/AnnouncementsPublisher.vue";
+import ProjectClassesList from "./components/classes/project/ProjectClassesList.vue";
+import ProjectClassSelectList from "./components/classes/project/ProjectClassSelectList.vue";
+import UserDescription from "./components/users/UserDescription.vue";
+import OverallStudentDescription from "./components/users/OverallStudentDescription.vue";
+import AuthPanel from "./components/users/AuthPanel.vue";
+import CourseProposition from "./components/courses/CourseProposition.vue";
+import CardItem from "./components/cards/CardItem.vue";
+import GroupList from "./components/cards/GroupList.vue";
+import CardsGrid from "./components/cards/CardsGrid.vue";
+import EditorWrapper from "./components/elements/EditorWrapper.vue";
+import ProjectClassSelector from "./components/classes/project/ProjectClassSelector.vue";
+import OrdinaryClass from "./components/classes/ordinary/OrdinaryClass.vue";
+import MultipleGradesManager from "./components/grades/MultipleGradesManager.vue";
+import ImageUploader from "./components/elements/ImageUploader.vue";
+import ImageCarousel from "./components/elements/ImageCarousel.vue";
+import SimpleAdder from "./components/elements/SimpleAdder.vue";
+import OrdinaryClassesManager from "./components/classes/ordinary/OrdinaryClassesManager.vue";
+import OrdinaryClassPeopleAdder from "./components/classes/ordinary/OrdinaryClassPeopleAdder.vue";
+import LearningSessionsManager from "./components/learning_sessions/LearningSessionsManager.vue";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/vue/css/core.css";
@@ -105,7 +104,6 @@ const app = createApp(App)
   .component("OverallStudentDescription", OverallStudentDescription)
   .component("AuthPanel", AuthPanel)
   .component("CourseProposition", CourseProposition)
-  .component("PropositionsHistory", PropositionsHistory)
   .component("CardItem", CardItem)
   .component("GroupList", GroupList)
   .component("CardsGrid", CardsGrid)

@@ -198,7 +198,7 @@ app/
 ├── public/               # Static assets
 ├── src/
 │   ├── assets/          # Images, fonts, etc.
-│   ├── components/      # Vue components
+│   ├── components/      # Reusable Vue components (UI, cards, forms, tables, layout)
 │   ├── plugins/         # Vue plugins (axios, etc.)
 │   ├── router/          # Vue Router configuration
 │   ├── theme/           # CSS/SCSS global styles
@@ -209,6 +209,82 @@ app/
 ├── tests/               # Unit and E2E tests
 └── package.json         # Dependencies and scripts
 ```
+
+### Components (`src/components/`)
+
+The `src/components/` directory is already structured into feature-oriented subfolders:
+
+- **layout/**: global layout pieces
+
+  - `OuterHeader.vue`: main header
+  - `InnerHeader.vue`: condensed header (secondary/top bar)
+  - `LoadingComponent.vue`: loading/suspense placeholder
+
+- **elements/**: reusable UI elements (building blocks)
+
+  - `IonicElement.vue`: dynamic element renderer (wraps HTML/Ionic widgets driven by `CustomElement`)
+  - `CustomSelect.vue`: `ion-select` wrapper with labeling/placeholder utilities
+  - `EditorWrapper.vue`: Quill editor wrapper used for rich-text fields
+  - `SimpleAdder.vue`: generic “add/remove rows + confirm” UI used by manager screens
+  - `ImageUploader.vue`: collects images to upload (emits progress/errors)
+  - `ImageCarousel.vue`: displays one or multiple images (carousel)
+
+- **cards/**: card/grid/list primitives and related rendering
+
+  - `GeneralCard.vue`: generic card layout driven by `GeneralCardElements` / `GeneralTableCardElements`
+  - `CourseCard.vue`: course-specific card used mainly in selection/enrollment flows
+  - `CardItem.vue`: card wrapper that routes rendering between general/course cards
+  - `CardsGrid.vue`: renders `CardItem` instances in a responsive grid
+  - `GroupList.vue`: renders grouped lists of `CardItem` (with dividers)
+  - `ListCard.vue` [main-structure]: renders an `OrderedCardsList` with support for list/grid/group layouts and selection events
+  - `IonicTable.vue` [main-structure]: table renderer for an `OrderedCardsList` of `GeneralTableCardElements`
+
+- **announcements/**: announcements feature
+
+  - `AnnouncementsComponent.vue`: announcements list for a course/session (opens publish/view modals)
+  - `AnnouncementsPublisher.vue`: modal to compose and publish an announcement (with optional section targeting)
+  - `AnnouncementViewer.vue`: modal to display a single announcement (HTML body loaded from backend)
+
+- **courses/**: course-related UI
+
+  - `CourseDescription.vue`: modal that shows detailed course info (content, teachings, images) and optionally project-class info via segment switch
+  - `CourseProposition.vue`: multi-step UI to propose/view/edit a course model (rich-text fields, validation, admin approval workflow)
+  - `CoursesSelectionList.vue`: student course enrollment UI
+  - `CurriculumList.vue`: student curriculum/progression table (credits progression + course table; opens grades and course-details modals)
+
+- **learning_sessions/**: learning sessions feature
+
+  - `LearningSessionsCards.vue`: shows learning sessions grouped by status (current/future/upcoming/completed)
+  - `LearningSessionsSelection.vue`: teacher view to select a session and list related/associated courses/classes for that session
+  - `LearningSessionsManager.vue`: admin tool to propose/edit learning sessions per school year (table editing + confirm/cancel flows)
+  - `SessionDescription.vue`: compact session “header/details” card loaded from backend (used as context summary)
+
+- **classes/**: class management
+
+  - **classes/ordinary/**:
+    - `OrdinaryClass.vue`: ordinary class page (students tables, compliance checks, session/section selection, student movement to project classes)
+    - `OrdinaryClassesManager.vue`: admin modals to create ordinary classes and add teachers/students (bulk add via `SimpleAdder`)
+    - `OrdinaryClassPeopleAdder.vue`: modal-based UI to add teachers/students to a class (search/filter + teaching/coordinator options)
+  - **classes/project/**:
+    - `ProjectClass.vue`: project class page (roster, course details modal, grades management, student move between project classes)
+    - `ProjectClassesList.vue`: master/detail list for sessions/years and related courses/classes (includes admin export and ordinary-classes management entry points)
+    - `ProjectClassSelectList.vue`: selection list for propositions/courses per session
+    - `ProjectClassSelector.vue`: modal to select destination project class for a student (shows constraints and available options)
+
+- **grades/**: grades management
+
+  - `GradesManager.vue`: modal to view/insert/edit grades (table + mean, date picker, per-grade descriptions, optional final grade)
+  - `MultipleGradesManager.vue`: modal to insert grades for multiple students at once (bulk input + validation)
+
+- **users/**: user/student-related UI
+  - `AuthPanel.vue`: login form (student/teacher/admin switch + alternative login link)
+  - `UserDescription.vue`: user profile page (view/edit personal data, profile image upload/remove, logout)
+  - `OverallStudentDescription.vue`: wrapper that combines student profile view + `CurriculumList`
+
+In general:
+
+- `src/components/` contains **reusable building blocks**.
+- `src/views/` contains **route-level pages** (used by the router).
 
 ## Useful Commands Summary
 

@@ -184,7 +184,7 @@ import {
   TmpList,
   CardsGridElements,
   CustomSubElements,
-} from "../types";
+} from "../../types";
 import {
   getIonicColor,
   isGeneral,
@@ -195,8 +195,8 @@ import {
   hasNoData,
   getBreakpoint,
   getBreakpointClasses,
-} from "../utils";
-import { getCssColor } from "../utils";
+} from "../../utils";
+import { getCssColor } from "../../utils";
 import { WatchStopHandle } from "vue";
 
 const setSpecificColors = (

@@ -456,7 +456,7 @@ const loadProfilePicture = async () => {
   original_image_name = profile_picture ? profile_picture.name : undefined;
   images_list = ref(profile_picture ? [profile_picture] : []);
   default_profile_picture =
-    profile_picture == undefined ? require("../assets/person.png") : undefined;
+    profile_picture == undefined ? require("@/assets/person.png") : undefined;
   image_trigger.value++;
 };
 const removeImage = () => {

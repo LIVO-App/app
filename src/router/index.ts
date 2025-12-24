@@ -154,12 +154,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/auth/google",
     name: "google_auth",
-    component: () => import("../components/LoadingComponent.vue"),
+    component: () => import("../components/layout/LoadingComponent.vue"),
   },
   {
     path: "/google-redirect",
     name: "google_redirect",
-    component: () => import("../components/LoadingComponent.vue"),
+    component: () => import("../components/layout/LoadingComponent.vue"),
   },
 ];
 
