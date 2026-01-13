@@ -63,6 +63,16 @@ import {
 } from "ionicons/icons";
 import { User, UserProps } from "./types";
 
+/**
+ * Main Vuex store.
+ *
+ * Holds shared state and configuration used across the app:
+ * - menu (items/order/default) and current selection
+ * - UI dictionaries (`elements`) and icons (`icons`)
+ * - a lightweight request/event bus (`state.request` / `state.event`) used by data-driven components
+ * - global settings (e.g. grade scale, layout preferences)
+ */
+
 const grades_scale = {
   min: 4,
   max: 10,

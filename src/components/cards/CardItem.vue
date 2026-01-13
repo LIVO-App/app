@@ -67,6 +67,22 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CardItem
+ * @description
+ * Row renderer used by list-like containers (e.g. `ListCard`) to display a single `CardElements` item.
+ * Selects the appropriate card component (general/course) and propagates link/event actions upward.
+ *
+ * @prop {CardElements} card - Card model to render.
+ * @prop {boolean} [detail=true] - Enables the Ionic "detail" indicator when the card is navigable.
+ * @prop {Colors<GeneralCardSubElements>} [colors] - Optional container color overrides.
+ * @prop {Classes<CardsCommonElements>} [classes] - Optional breakpoint-aware class overrides.
+ *
+ * @event update:card - Emitted when the card is edited via v-model.
+ * @event execute_link - Emitted when a request-link should be executed by the parent.
+ * @event signal_event - Emitted when an event-link should be handled by the parent.
+ */
+
 import {
   CardElements,
   CardsCommonElements,

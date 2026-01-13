@@ -1,4 +1,5 @@
 <template>
+  <!-- Global alert used for success/error feedback (export and other admin actions) -->
   <ion-alert
     :is-open="alert_open"
     :header="alert_information.title"
@@ -6,12 +7,16 @@
     :buttons="alert_information.buttons"
     @didDismiss="closeModal('success')"
   />
+
+  <!-- Two-column picker: left selects a school year / learning session, right shows classes/courses for the selection -->
   <ion-grid
     ><!-- v-if="learning_sessions.loaded">-->
     <ion-row v-if="$route.name == 'ordinary_classes' && user.type == 'admin'">
+      <!-- Admin-only: create ordinary classes (embedded management component) -->
       <ordinary-classes-manager @signal_event="setupModalAndOpen()" />
     </ion-row>
     <ion-row v-if="user.type == 'admin'">
+      <!-- Admin-only: export subscriptions for the next learning session -->
       <ionic-element
         :element="
           getCustomMessage(
@@ -34,6 +39,7 @@
     </ion-row>
     <ion-row>
       <ion-col size="12" size-md="6">
+        <!-- Left list: school years (ordinary classes) OR learning sessions (project courses / announcements) -->
         <list-card
           :title="
             getCustomMessage(
@@ -74,6 +80,7 @@
         />
       </ion-col>
       <ion-col size="12" size-md="6">
+        <!-- Right list: ordinary classes OR courses/project classes for the selected left item -->
         <list-card
           :key="trigger"
           :title="
@@ -133,6 +140,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ProjectClassesList
+ * @description
+ * Lists available **school years / learning sessions** and, once selected, displays
+ * the corresponding ordinary classes or project-class related items.
+ *
+ * For admins it also exposes actions such as exporting subscriptions and creating
+ * ordinary classes (via `OrdinaryClassesManager`).
+ */
 import {
   GeneralCardElements,
   LearningSession,
@@ -171,9 +187,21 @@ type Indexes = {
 };
 type AvailableModal = "success" | "error";
 
+/**
+ * Returns true when the user has not selected a left-hand element yet.
+ *
+ * This is used to show a meaningful empty-state message on the right list.
+ */
 const is_nothing_selected = () =>
   selected_element_indexes.group == "-1" &&
   selected_element_indexes.index == -1;
+
+/**
+ * Finds the indexes for an element inside an `OrderedCardsList`.
+ *
+ * If `id` is provided, it searches by id; otherwise it searches for the element
+ * marked as `selected`.
+ */
 const find_element = (
   list: OrderedCardsList<GeneralCardElements>,
   id?: string
@@ -201,6 +229,13 @@ const find_element = (
     index: index,
   };
 };
+
+/**
+ * Handles selection changes in the left list.
+ *
+ * - If the same element is clicked again, it unselects and clears the right list.
+ * - Otherwise it selects the element and loads the corresponding right-side items.
+ */
 const changeSelection = async () => {
   if (
     selected_element_indexes.group != "-1" &&
@@ -239,6 +274,10 @@ const changeSelection = async () => {
     }
   }
 };
+
+/**
+ * Toggles the `selected` flag for the specified element and triggers rerender.
+ */
 const selectedChange = (
   list: OrderedCardsList<GeneralCardElements>,
   year = selected_element_indexes.group,
@@ -250,6 +289,13 @@ const selectedChange = (
   list.cards[year][index].selected = value;
   trigger.value++;
 };
+
+/**
+ * Loads the right-side list for the selected learning session.
+ *
+ * - In "announcements" route: returns minimized course cards that link to announcements.
+ * - Otherwise: returns admin project class cards that link to project course pages.
+ */
 const getCourses = async () =>
   executeLink(
     $route.name == "announcements"
@@ -296,6 +342,13 @@ const getCourses = async () =>
         )
       )
   );
+
+/**
+ * Groups ordinary classes by study address for the selected school year.
+ *
+ * The result is an `OrderedCardsList` where each group header contains the study
+ * address visualization (icon + background) if available.
+ */
 const getClasses = () => {
   const tmp_classes: OrderedCardsList<GeneralCardElements> = {
     order: [],
@@ -364,6 +417,12 @@ const getClasses = () => {
   }
   return tmp_classes;
 };
+
+/**
+ * Opens a feedback alert (success or error).
+ *
+ * The message defaults to the last store event message when available.
+ */
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
@@ -383,6 +442,10 @@ const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
       break;
   }
 };
+
+/**
+ * Closes the feedback alert.
+ */
 const closeModal = (window: AvailableModal) => {
   switch (window) {
     case "success":
@@ -391,6 +454,12 @@ const closeModal = (window: AvailableModal) => {
       break;
   }
 };
+
+/**
+ * Admin-only action: exports subscriptions to CSV.
+ *
+ * Uses `downloadCsv` and maps the outcome code to a success/error alert.
+ */
 const exportSubscriptions = async () => {
   executeLink(
     undefined,
@@ -431,6 +500,10 @@ const exportSubscriptions = async () => {
     }
   );
 };
+
+/**
+ * Keeps the responsive layout in sync with the current window width.
+ */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
 };

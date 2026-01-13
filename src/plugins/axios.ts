@@ -1,3 +1,12 @@
+/**
+ * Shared Axios instance.
+ *
+ * - Sets `baseURL` based on `NODE_ENV` (dev vs production).
+ * - Adds the token to the `x-access-token` header reading it from `sessionStorage`.
+ *
+ * Note: expired-token handling/refresh and redirects are implemented in `utils.ts`.
+ */
+
 import axios from "axios";
 /*import type {App} from 'vue'
 
@@ -17,6 +26,10 @@ export default {
     }
 }*/
 
+/**
+ * Axios runtime configuration.
+ * The token is read from the session at bootstrap time and can be updated by the login flow.
+ */
 const options: {
   baseUrl?: string;
   token?: string;
@@ -28,6 +41,9 @@ const options: {
   token: sessionStorage.getItem("token") ?? undefined,
 };
 
+/**
+ * Preconfigured Axios client, used by `executeLink()`.
+ */
 const $axios = axios.create({
   baseURL: options.baseUrl,
   headers: {

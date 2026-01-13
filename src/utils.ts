@@ -54,35 +54,69 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { secureStorage } from "./services/secureStorage";
 import { getDeviceUuid } from "./services/deviceId";
 
+/**
+ * Shared utilities and helpers.
+ *
+ * This module centralizes:
+ * - UI helpers (translations, Ionic/CSS colors, breakpoints, layout)
+ * - type guards for “Card/Element” objects defined in `types.ts`
+ * - backend request execution via Axios (`executeLink`) with token handling
+ * - auth flows (auto-login, logout, refresh token) and token parsing
+ */
+
+/**
+ * Returns the full school-year string (e.g. `2024 - 2025`).
+ */
 function getCompleteSchoolYear(year: number) {
   return year + " - " + (year + 1);
 }
 
+/**
+ * Computes the current school year (September = school-year boundary).
+ */
 function getCurrentSchoolYear() {
   const today = new Date();
   return today.getMonth() < 8 ? today.getFullYear() - 1 : today.getFullYear();
 }
 
+/**
+ * Formats a date range as a string (e.g. `01/09/2024-30/06/2025`).
+ */
 function getRagneString(start: Date, end: Date) {
   return toDateString(new Date(start)) + "-" + toDateString(new Date(end));
 }
 
+/**
+ * Type guard: checks whether an object is a Card.
+ */
 function isCard(element: any): element is CardElements {
   return "group" in element;
 }
 
+/**
+ * Type guard: checks whether a Card is a “generic” one (not a course).
+ */
 function isGeneral(element: any): element is GeneralCardElements {
   return "side_element" in element || !("credits" in element); // TODO (8): vedere se aggiungere un parametro per fare la condizione positiva (al posto di negativa con "credits")
 }
 
+/**
+ * Type guard: checks whether a Card is a course/enrollment.
+ */
 function isCourse(element: any): element is EnrollmentCardElements {
   return "credits" in element;
 }
 
+/**
+ * Type guard: checks whether an object represents an ordered card list.
+ */
 function isOrderedCardList(element: any): element is OrderedCardsList {
   return "order" in element;
 }
 
+/**
+ * Type guard: checks whether the structure is a map of (grouped) card lists.
+ */
 function isCardLists(element: any): element is TmpList<CardsList> {
   const first_key = Object.keys(element)[0]; // TODO (6): fare controllo safe anche per lista vuota
   const second_key =
@@ -95,6 +129,10 @@ function isCardLists(element: any): element is TmpList<CardsList> {
   );
 }
 
+/**
+ * Removes any `<script>...</script>` blocks from a string.
+ * Used as a defensive measure to prevent script injection when composing URLs/bodies.
+ */
 function removeScript(text: string) {
   return text.replace(
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
@@ -102,6 +140,10 @@ function removeScript(text: string) {
   );
 }
 
+/**
+ * Decodes HTML entities inside an object (recursively mutating strings).
+ * Used to sanitize/normalize HTML content coming from the backend.
+ */
 function decodeHtmlEntities(element: any) {
   for (const key in element) {
     if (key in element) {
@@ -114,6 +156,13 @@ function decodeHtmlEntities(element: any) {
   }
 }
 
+/**
+ * Executes an HTTP request to the backend.
+ *
+ * - URL and method can be passed explicitly or read from `store.state.request`.
+ * - Always includes `x-access-token` from storage (`sessionStorage`).
+ * - Handles expired token: logout and redirect to `auth`.
+ */
 async function executeLink(
   url?: string | undefined,
   success = (response: any) => response,
@@ -182,6 +231,9 @@ async function executeLink(
   }
 }
 
+/**
+ * Returns a localized label (Italian/English) from `store.state.elements`.
+ */
 function getCurrentElement(key: string) {
   // TODO (4): aggiungere parametri da inniettare
   const language: Language = getCurrentLanguage();
@@ -190,12 +242,18 @@ function getCurrentElement(key: string) {
   return elements[language][key];
 }
 
+/**
+ * Returns the icon alternative (ios/md) from `store.state.icons`.
+ */
 function getIcon(key: string) {
   const icons: IconsList = store.state.icons;
 
   return icons[key];
 }
 
+/**
+ * Fast string hash (used for deterministic ids / dedup).
+ */
 function hashCode(str: string) {
   let i, chr;
   let hash = 0;
@@ -209,6 +267,9 @@ function hashCode(str: string) {
   return hash;
 }
 
+/**
+ * Converts a (translated) string to the learning-session status enum.
+ */
 function castStatus(status: string): LearningSessionStatus | null {
   let cast: LearningSessionStatus | null = null;
 
@@ -230,6 +291,9 @@ function castStatus(status: string): LearningSessionStatus | null {
   return cast;
 }
 
+/**
+ * Returns the effective learning context (parameter or store fallback).
+ */
 function getActualLearningContext(
   learning_context: LearningContextSummary | undefined
 ): LearningContextSummary {
@@ -247,6 +311,11 @@ function toSummary(
     : undefined;
 }
 
+/**
+ * Formats a date using the `en-GB` locale.
+ * @param time include time
+ * @param seconds include seconds (only if `time` is true)
+ */
 function toDateString(date: Date, time = false, seconds = false) {
   let date_string = date.toLocaleDateString("en-GB"),
     tmp_date_list;
@@ -263,28 +332,49 @@ function toDateString(date: Date, time = false, seconds = false) {
   return date_string;
 }
 
+/**
+ * Returns the localized label for a gender key.
+ */
 function getGender(key: Gender) {
   return getCurrentElement(GenderKeys[key]);
 }
 
+/**
+ * Maps a 0-based index to a section letter (0 → A, 1 → B, ...).
+ */
 function numberToSection(section: number) {
   return String.fromCharCode(65 + section);
 }
 
+/**
+ * Type guard: checks whether a link payload is an event link.
+ */
 function isEvent(link: any): link is EventParameters {
   return "event" in link;
 }
 
+/**
+ * Type guard: checks whether a link payload is a request link.
+ */
 function isRequest(link: any): link is RequestParameters {
   return "url" in link;
 }
 
+/**
+ * Type guard: checks whether an element is an event that carries text.
+ */
 function isEventString(element: any): element is EventString {
   return isEvent(element) && "text" in element;
 }
 
+/**
+ * Type guard: checks whether a value is a `File`.
+ */
 const isFile = (element: any): element is File => element instanceof File;
 
+/**
+ * Returns a localized string for the given learning-session status.
+ */
 function getStatusString(status: LearningSessionStatus) {
   return status == LearningSessionStatus.CURRENT
     ? getCurrentElement("current")
@@ -293,6 +383,9 @@ function getStatusString(status: LearningSessionStatus) {
     : "";
 }
 
+/**
+ * Returns an Ionic color name representing the given learning-session status.
+ */
 function getStatusColor(status: LearningSessionStatus) {
   return status == LearningSessionStatus.CURRENT
     ? "success"
@@ -301,14 +394,23 @@ function getStatusColor(status: LearningSessionStatus) {
     : "";
 }
 
+/**
+ * Returns the current UI language from the store.
+ */
 function getCurrentLanguage(): Language {
   return store.state.language;
 }
 
+/**
+ * Returns the list of available UI languages.
+ */
 function getAviableLanguages(): Language[] {
   return store.state.languages;
 }
 
+/**
+ * Builds a `CustomElement` message payload for data-driven UI rendering.
+ */
 function getCustomMessage(
   id: string,
   content: ContentType,
@@ -325,14 +427,23 @@ function getCustomMessage(
   };
 }
 
+/**
+ * Returns the first argument that is neither `undefined` nor `null`.
+ */
 function nullOperator(...args: any[]): any {
   return args.find((arg) => arg !== undefined && arg !== null);
 }
 
+/**
+ * Reads a CSS custom property from `:root`.
+ */
 function getCssVariable(variable: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(variable);
 }
 
+/**
+ * Returns icon + background color metadata for a study address id.
+ */
 function getStudyAddressVisualization(study_address_id: string) {
   let visualization:
     | {
@@ -383,6 +494,9 @@ function getStudyAddressVisualization(study_address_id: string) {
   return visualization;
 }
 
+/**
+ * Returns an integer sequence of the given length, starting from `start`.
+ */
 function getNumberSequence(length: number, start = 0) {
   return Array.from(
     {
@@ -394,6 +508,9 @@ function getNumberSequence(length: number, start = 0) {
   );
 }
 
+/**
+ * Builds a `User` instance from a JWT access token (and optional refresh token).
+ */
 function getUserFromTokens(token: string, refresh_token?: string) {
   const token_obj = JSON.parse(atob(token.split(".")[1]));
 
@@ -407,6 +524,9 @@ function getUserFromTokens(token: string, refresh_token?: string) {
   });
 }
 
+/**
+ * Returns the default landing menu item for a given user role.
+ */
 function getDefautlLink(user_role: UserType) {
   const menu: Menu = store.state.menu;
   const name = menu.default_item[user_role];
@@ -419,8 +539,8 @@ function getDefautlLink(user_role: UserType) {
 }
 
 /**
- * Get or generate device ID for authentication
- * Returns existing device_uuid from storage or generates a new one
+ * Gets or generates a device UUID for authentication.
+ * Returns an existing `device_uuid` from storage or generates a new one.
  */
 async function getOrCreateDeviceUuid(): Promise<string> {
   // Try to get existing device_uuid from storage
@@ -442,6 +562,10 @@ async function getOrCreateDeviceUuid(): Promise<string> {
   return deviceUuid;
 }
 
+/**
+ * Persists the logged user in storage and updates the Vuex state.
+ * Also sets the menu selection to the provided default link.
+ */
 async function setUser(user: User, default_link: DefaultLink) {
   const properties = User.getProperties();
   const deviceUuid = await getOrCreateDeviceUuid();
@@ -460,10 +584,17 @@ async function setUser(user: User, default_link: DefaultLink) {
   store.state.menuIndex = default_link.index;
 }
 
+/**
+ * Returns the backend base URL as configured on the shared Axios instance.
+ */
 function getBaseUrl() {
   return $axios.defaults.baseURL;
 }
 
+/**
+ * Loads the learning contexts for a student (and optionally a session).
+ * Filters out excluded contexts and returns the main context first (if present).
+ */
 function getLearningContexts(
   user: UserSummary,
   learning_session_id?: string
@@ -499,6 +630,10 @@ function getLearningContexts(
   );
 }
 
+/**
+ * Clears the current session (and optionally revokes the refresh token on backend).
+ * @param delete_scure Whether to clear secure storage as well.
+ */
 async function logout(delete_scure = true) {
   const menu: Menu = store.state.menu;
 
@@ -537,6 +672,11 @@ async function logout(delete_scure = true) {
 
   return true;
 }
+
+/**
+ * Checks whether the current access token is expired.
+ * @param check_user When true, missing user counts as expired.
+ */
 function isTokenExpired(check_user = false) {
   const user: User | undefined = User.getLoggedUser();
 
@@ -615,6 +755,9 @@ async function tryAutoLogin(): Promise<
   return undefined;
 }
 
+/**
+ * Returns the locale string used for date/time formatting.
+ */
 function getLocale() {
   let locale: string;
   switch (getCurrentLanguage()) {
@@ -629,6 +772,10 @@ function getLocale() {
   return locale;
 }
 
+/**
+ * Parses an input grade string into a number, following the store regex.
+ * Returns `NaN` if the value is not a valid grade.
+ */
 function getGradeNumber(grade: string) {
   const tmp_regexp = store.state.grades_scale.input_regex;
   const actual_grade = tmp_regexp.test(grade) ? parseFloat(grade) : NaN;
@@ -641,6 +788,10 @@ function getGradeNumber(grade: string) {
   }
 }
 
+/**
+ * Validates a grade string and clamps it to the configured min/max.
+ * Returns `NaN` if invalid/out of bounds.
+ */
 function limitGrade(grade: string) {
   let actual_grade: number;
 
@@ -655,6 +806,10 @@ function limitGrade(grade: string) {
   }
 }
 
+/**
+ * Common validation for description+date forms.
+ * Emits events in the store for missing descriptions or invalid dates.
+ */
 function checkCommonParameters(
   descriptions: {
     [key in keyof Language as `${Language}_description`]: string;
@@ -693,6 +848,10 @@ function checkCommonParameters(
   return outcome;
 }
 
+/**
+ * Validates a single grade form and returns the parsed grade.
+ * On invalid input, emits an error event and returns `undefined`.
+ */
 function checkGradeParameters(
   descriptions: {
     [key in keyof Language as `${Language}_description`]: string;
@@ -718,6 +877,10 @@ function checkGradeParameters(
   return actual_grade;
 }
 
+/**
+ * Validates multiple grades and returns the parsed list.
+ * On invalid input, emits an error event.
+ */
 function checkMultiGradesParameters(
   descriptions: {
     [key in keyof Language as `${Language}_description`]: string;
@@ -764,6 +927,10 @@ function checkMultiGradesParameters(
   return actual_grades;
 }
 
+/**
+ * Returns whether the current grade typing action should be treated as invalid.
+ * Used to block characters / patterns not allowed by the grade input rules.
+ */
 function hasGradeTypingErrors(
   event_name: string,
   whole_grade: string,
@@ -788,6 +955,9 @@ function hasGradeTypingErrors(
   return right;
 }
 
+/**
+ * Computes subscribed credits, counting only pending courses.
+ */
 function getSubscribedCredits(
   courses_data: {
     pending: boolean | Date;
@@ -806,10 +976,17 @@ function getSubscribedCredits(
   );
 }
 
+/**
+ * Returns whether a learning context is linked to learning areas.
+ */
 function isLinkedToAreas(learning_context: LearningContext) {
   return learning_context.credits == undefined;
 }
 
+/**
+ * Loads learning areas for each context and merges them into a single map.
+ * Returns both the merged list and a distribution map per context.
+ */
 async function getLearningAreasStructures(
   learning_contexts: LearningContext[],
   learning_session_id: string
@@ -853,12 +1030,18 @@ async function getLearningAreasStructures(
   };
 }
 
+/**
+ * Returns the localized title for a learning context.
+ */
 function getContextAcronym(option: LearningContext) {
   const language = getCurrentLanguage();
 
   return option[`${language}_title`];
 }
 
+/**
+ * Converts a hex color (e.g. `#RRGGBB`) to an `r,g,b` string.
+ */
 function hexToRGB(hex: string) {
   // TODO (6): rendere più generale
 
@@ -869,6 +1052,9 @@ function hexToRGB(hex: string) {
   return r + "," + g + "," + b;
 }
 
+/**
+ * Converts a `ColorObject` to a CSS color string (hex/rgb/rgba).
+ */
 function getCssColor(color_object: ColorObject, use_alpha = true) {
   let css_variable: string, color: string;
 
@@ -918,6 +1104,10 @@ function getCssColor(color_object: ColorObject, use_alpha = true) {
   return color;
 }
 
+/**
+ * Returns an Ionic color name when the color can be represented as an Ionic token.
+ * Used to prefer Ionic theming over inline CSS where possible.
+ */
 function getIonicColor(color: ColorObject | undefined) {
   return color != undefined &&
     color.type == "var" &&
@@ -927,6 +1117,9 @@ function getIonicColor(color: ColorObject | undefined) {
     : undefined;
 }
 
+/**
+ * Prepares the global alert state for an error.
+ */
 function setupError(message?: string) {
   const alert_information: AlertInformation = store.state.alert_information;
 
@@ -935,6 +1128,10 @@ function setupError(message?: string) {
   alert_information.buttons = [getCurrentElement("ok")];
 }
 
+/**
+ * Removes a row from a table-like ordered card list and renumbers linked indexes.
+ * Returns the removed index (or -1 if not found).
+ */
 function removeTableIndexedElement(
   table: OrderedCardsList<GeneralTableCardElements>,
   id: string | number,
@@ -964,10 +1161,17 @@ function removeTableIndexedElement(
   return index;
 }
 
+/**
+ * Sets the hover state on a card.
+ */
 function hoverItem(card: CardElements, value: boolean) {
   card.hovered = value;
 }
 
+/**
+ * Executes optional per-role control logic attached to a menu item.
+ * Used to conditionally show/hide items.
+ */
 function executeAdditionalControl(user: User, item: MenuItem) {
   let additional_control: boolean | undefined = undefined;
 
@@ -985,6 +1189,9 @@ function executeAdditionalControl(user: User, item: MenuItem) {
   return additional_control;
 }
 
+/**
+ * Returns the visible menu order for the given user.
+ */
 function getMenuOrder(menu: Menu, user: User) {
   return menu.order[user.type].filter((a) =>
     user != undefined
@@ -993,6 +1200,9 @@ function getMenuOrder(menu: Menu, user: User) {
   );
 }
 
+/**
+ * Returns the current page title based on menu selection.
+ */
 function getPageTitle(user: User) {
   const menu: Menu = store.state.menu;
   const order: string[] = getMenuOrder(menu, user);
@@ -1000,14 +1210,23 @@ function getPageTitle(user: User) {
   return getCurrentElement(order[menu.index]);
 }
 
+/**
+ * Returns whether a custom element supports v-model updates.
+ */
 function canVModel(e: CustomElement | undefined) {
   return e?.type == "input" || e?.type == "checkbox";
 }
 
+/**
+ * Returns whether any element in the array supports v-model updates.
+ */
 function canArrayVModel(a: CustomElement[]) {
   return a.find((e) => canVModel(e)) != undefined;
 }
 
+/**
+ * Returns whether any list entry contains v-model capable elements.
+ */
 function canListVModel(cards_list: TmpList<CustomElement[]>) {
   let count = 0,
     found = false;
@@ -1023,6 +1242,9 @@ function canListVModel(cards_list: TmpList<CustomElement[]>) {
   return found;
 }
 
+/**
+ * Returns whether a general card contains any v-model capable element.
+ */
 function canCardVModel(card: GeneralCardElements) {
   return (
     canVModel(card.title) ||
@@ -1032,12 +1254,18 @@ function canCardVModel(card: GeneralCardElements) {
   );
 }
 
+/**
+ * Returns whether any card in the list contains v-model capable elements.
+ */
 function canCardArrayVModel(cards: CardElements[]) {
   return (
     cards.find((card) => isGeneral(card) && canCardVModel(card)) != undefined
   );
 }
 
+/**
+ * Returns whether any group in a card list contains v-model capable elements.
+ */
 function canCardListVModel(cards_list: CardsList) {
   let count = 0,
     found = false;
@@ -1053,12 +1281,18 @@ function canCardListVModel(cards_list: CardsList) {
   return found;
 }
 
+/**
+ * Picks the first non-nullish color among the provided candidates.
+ */
 function adjustColor(
   ...colors: (ColorObject | undefined)[]
 ): ColorObject | undefined {
   return nullOperator(...colors);
 }
 
+/**
+ * Applies fallback text colors to a general card (title/subtitle/content).
+ */
 function adjustGeneralCardColors(
   card: GeneralCardElements,
   colors: Colors<GeneralCardSubElements> | undefined
@@ -1096,6 +1330,9 @@ function adjustGeneralCardColors(
   }
 }
 
+/**
+ * Returns whether an ordered list contains no cards.
+ */
 function hasNoData(list: OrderedCardsList | undefined) {
   return (
     list == undefined ||
@@ -1104,6 +1341,9 @@ function hasNoData(list: OrderedCardsList | undefined) {
   );
 }
 
+/**
+ * Maps a window/container width to the project's breakpoint key.
+ */
 function getBreakpoint(width: number): Breakpoint {
   const breakpoints = store.state.breakpoints;
 
@@ -1114,6 +1354,10 @@ function getBreakpoint(width: number): Breakpoint {
   else return "xl";
 }
 
+/**
+ * Returns a list of breakpoint keys ordered by size.
+ * If `gt_than` is provided, only returns breakpoints larger than it.
+ */
 function getOrderedBreakpoints(gt_than?: Breakpoint) {
   return (Object.keys(store.state.breakpoints) as Breakpoint[])
     .sort((a, b) =>
@@ -1126,6 +1370,9 @@ function getOrderedBreakpoints(gt_than?: Breakpoint) {
     );
 }
 
+/**
+ * Returns true if `actual` is smaller than (or equal to) `refer`.
+ */
 function isSmaller(actual: Breakpoint, refer: Breakpoint, equal = true) {
   if (!equal && refer == actual) {
     return false;
@@ -1134,6 +1381,9 @@ function isSmaller(actual: Breakpoint, refer: Breakpoint, equal = true) {
   return getOrderedBreakpoints(refer).indexOf(actual) == -1;
 }
 
+/**
+ * Updates a class map based on breakpoint-scoped visibility rules.
+ */
 function updateBreakpointClasses(
   refer_classes:
     | {
@@ -1166,6 +1416,9 @@ function updateBreakpointClasses(
   }
 }
 
+/**
+ * Returns a filtered class map based on breakpoint-scoped visibility rules.
+ */
 function getBreakpointClasses(
   classes:
     | {
@@ -1181,7 +1434,10 @@ function getBreakpointClasses(
   return filtered_classes;
 }
 
-function isMatrix(element: any) {
+/**
+ * Type guard: checks whether an object is an array of arrays.
+ */
+function isMatrix(element: any): element is any[][] {
   if (!Array.isArray(element)) {
     return false; // Non è un array
   }
@@ -1190,6 +1446,9 @@ function isMatrix(element: any) {
   return element.every((value) => Array.isArray(value));
 }
 
+/**
+ * Type guard: checks whether an object is an array of arrays of LayoutElement.
+ */
 function isLayoutElementMatrix(element: any): element is LayoutElement[][] {
   return (
     isMatrix(element) &&
@@ -1197,6 +1456,10 @@ function isLayoutElementMatrix(element: any): element is LayoutElement[][] {
   );
 }
 
+/**
+ * Returns the effective layout for the given breakpoint.
+ * Falls back to the closest matching breakpoint or `general` if provided.
+ */
 function getLayout(layout: Layout | undefined, breakpoint: Breakpoint) {
   let to_ret: (string | number)[] | LayoutElement[][] | undefined = undefined;
   let tmp_breakpoint: Breakpoint | undefined = breakpoint;
@@ -1216,6 +1479,9 @@ function getLayout(layout: Layout | undefined, breakpoint: Breakpoint) {
   return to_ret;
 }
 
+/**
+ * Cast helper for layout rows.
+ */
 function castLayoutRow(e: any) {
   return e as {
     id: string | number;
@@ -1223,6 +1489,9 @@ function castLayoutRow(e: any) {
   }[];
 }
 
+/**
+ * Resolves a responsive size spec for the current breakpoint.
+ */
 function getSize(
   element_size: string | BreakpointVisibility<Breakpoint, string> | undefined,
   breakpoint: Breakpoint
@@ -1236,6 +1505,9 @@ function getSize(
     : undefined;
 }
 
+/**
+ * Resolves a table cell size using either the cell override or global sizes.
+ */
 function getTableCellSize(
   cell_size: string | BreakpointVisibility<Breakpoint, string> | undefined,
   sizes: string[] | TmpList<TmpList<(string | undefined)[]>>,
@@ -1250,6 +1522,9 @@ function getTableCellSize(
     : undefined;
 }
 
+/**
+ * Picks the closest breakpoint key available in a breakpoint-visibility map.
+ */
 function getBreakpointElement<T extends Breakpoint | BreakpointScope>(
   elements: BreakpointVisibility<T, any> | undefined,
   breakpoint: Breakpoint
@@ -1277,6 +1552,12 @@ function getBreakpointElement<T extends Breakpoint | BreakpointScope>(
   return to_ret;
 }
 
+/**
+ * Downloads a CSV file.
+ * - Web: uses an object URL.
+ * - Native: writes to Documents via Capacitor Filesystem.
+ * Returns 1 on success, 0 for empty input, -1 on failure.
+ */
 async function downloadCsv(data: string | Blob, filename: string) {
   let url: string, link: HTMLAnchorElement, reader: FileReader;
 
@@ -1320,6 +1601,10 @@ async function downloadCsv(data: string | Blob, filename: string) {
   }
 }
 
+/**
+ * Uploads multiple images as multipart/form-data.
+ * Returns the HTTP status code.
+ */
 function uploadMultipleImages(url: string, files: File[]): Promise<number> {
   const formData = new FormData();
 
@@ -1341,6 +1626,10 @@ function uploadMultipleImages(url: string, files: File[]): Promise<number> {
   );
 }
 
+/**
+ * Parses a date string in `DD/MM/YYYY` (optionally with time) into a `Date`.
+ * @param is_reversed If true, reverses the date parts.
+ */
 function dateStringToDate(date: string, is_reversed = false) {
   let hours = "00",
     minutes = "00",
@@ -1372,10 +1661,16 @@ function dateStringToDate(date: string, is_reversed = false) {
   }
 }
 
+/**
+ * Converts a date string (as parsed by `dateStringToDate`) to ISO format.
+ */
 function dateStringToISODate(date: string) {
   return dateStringToDate(date).toISOString();
 }
 
+/**
+ * Converts a user-entered date string to the backend expected format.
+ */
 function getDateStringToSend(date: string, put_time = false) {
   let tmp_date_list = date.split(" "),
     hours = "00",
@@ -1398,6 +1693,10 @@ function getDateStringToSend(date: string, put_time = false) {
   );
 }
 
+/**
+ * Extracts a normalized key/value map from a table-like card.
+ * Used by CSV export and table manipulation.
+ */
 function getCardValues(
   table_card: GeneralCardElements,
   attributes_templates: {

@@ -1,8 +1,10 @@
 <template>
+  <!-- Two-column grid (responsive): each ListCard shows a learning-session group by status. -->
   <ion-grid
     ><!-- v-if="learning_sessions.loaded">-->
     <ion-row>
       <ion-col size="12" size-md="6">
+        <!-- Current sessions (active right now). -->
         <list-card
           :title="
             getCustomMessage('title', getCurrentElement('current'), 'string', {
@@ -38,6 +40,8 @@
             },
           }"
         />
+
+        <!-- Future sessions (planned / open enrollment split happens in the script logic). -->
         <list-card
           :title="
             getCustomMessage('title', getCurrentElement('future'), 'string', {
@@ -75,6 +79,7 @@
         />
       </ion-col>
       <ion-col size="12" size-md="6">
+        <!-- Upcoming sessions (next in timeline, but not started yet). -->
         <list-card
           :title="
             getCustomMessage('title', getCurrentElement('upcoming'), 'string', {
@@ -110,6 +115,8 @@
           :emptiness_message="no_session"
           :cards_list="learning_sessions.upcoming"
         />
+
+        <!-- Completed sessions grouped by school year. -->
         <list-card
           :title="
             getCustomMessage(
@@ -156,6 +163,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName LearningSessionsCards
+ * @description
+ * Shows learning sessions grouped by status (current/future/upcoming/completed).
+ * Sessions are loaded from the backend and rendered through `ListCard` groups.
+ */
+
 import {
   GeneralCardElements,
   LearningSessionStatus,
@@ -220,11 +234,13 @@ let open_enrollment = false,
   first = true;
 
 if (current_class != undefined) {
+  // Fetch sessions for past school years (rendered under the "completed" group).
   for (const oc of ordinary_classes) {
     promises.push(
       executeLink(
         "/v1/learning_sessions?school_year=" + oc.school_year,
         async (response) => {
+          // For each past year: create a section and convert all sessions into cards.
           learning_sessions.completed.order.push({
             key: oc.school_year,
             title: getCustomMessage("title", oc.school_year, "title"),
@@ -236,18 +252,25 @@ if (current_class != undefined) {
               await learning_session.toCard(undefined)
             );
           }
-        },
+        }
       )
     );
   }
+
+  // Fetch sessions for the current school year and split them by status.
   promises.push(
     executeLink(
       "/v1/learning_sessions?school_year=" + current_school_year,
       async (response) => {
+        // Ensure the current year exists under completed (some sessions may already be completed).
         learning_sessions.completed.order.push({
           key: current_school_year,
           title: getCustomMessage("title", current_school_year, "title"),
         });
+
+        // Future sessions are shown in two sub-groups:
+        // - open_enrollment: the first "planned" session whose open day is in the past
+        // - planned: all other future sessions
         learning_sessions.future.order = learning_sessions.future.order.concat(
           {
             key: "open_enrollment",
@@ -271,6 +294,8 @@ if (current_class != undefined) {
 
         for (const session of response.data.data) {
           learning_session = new LearningSession(session);
+
+          // Build the visual card once, then place it into the appropriate group.
           tmp_element = await learning_session.toCard(
             undefined,
             undefined,
@@ -279,11 +304,15 @@ if (current_class != undefined) {
             true
           );
 
+          // Grouping rules: one bucket for CURRENT and UPCOMING (single-card lists),
+          // FUTURE into planned/open-enrollment, COMPLETED by school year.
           switch (learning_session.getStatus()) {
             case LearningSessionStatus.FUTURE:
               if (learning_sessions.future.cards["planned"] == null) {
                 learning_sessions.future.cards["planned"] = [];
               }
+
+              // Detect whether the first planned session has already opened enrollment.
               if (first) {
                 first = false;
                 if (
@@ -296,9 +325,11 @@ if (current_class != undefined) {
               learning_sessions.future.cards["planned"].push(tmp_element);
               break;
             case LearningSessionStatus.UPCOMING:
+              // Only the nearest upcoming session is shown.
               learning_sessions.upcoming.cards[""] = [tmp_element];
               break;
             case LearningSessionStatus.CURRENT:
+              // Only the current active session is shown.
               learning_sessions.current.cards[""] = [tmp_element];
               break;
             case LearningSessionStatus.COMPLETED:
@@ -318,6 +349,7 @@ if (current_class != undefined) {
           }
         }
 
+        // If enrollment is open, move the first planned session into the dedicated bucket.
         if (
           open_enrollment &&
           (tmp_element = learning_sessions.future.cards["planned"].shift()) !=
@@ -328,9 +360,13 @@ if (current_class != undefined) {
       }
     )
   );
+
+  // Wait for all backend calls to complete before finalizing order.
   await Promise.all(promises); /*.then(() => {
       learning_sessions.loaded = true;
     });*/
+
+  // Display past school years in descending order.
   learning_sessions.completed.order.reverse();
   if (learning_sessions.completed.cards[current_school_year] == undefined) {
     learning_sessions.completed.cards[current_school_year] = [];

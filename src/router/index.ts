@@ -1,3 +1,14 @@
+/**
+ * App router (Vue Router via Ionic).
+ *
+ * Includes:
+ * - route definitions (views/ and a couple of loading components)
+ * - a global navigation guard for:
+ *   - token/expiry checks
+ *   - auto-login and Google OAuth redirect
+ *   - blocking navigation to routes not available for the user's role
+ */
+
 import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import { store } from "../store";
@@ -168,6 +179,17 @@ const router = createRouter({
   routes,
 });
 
+/**
+ * Global guard.
+ *
+ * - If the token is expired: logout and redirect to `auth`.
+ * - If the user is not logged in:
+ *   - handles the Google flow (`google_auth` / `google_redirect`)
+ *   - attempts auto-login
+ * - If the user is logged in:
+ *   - blocks routes not present in any menu entry for the role
+ *   - handles `logout`
+ */
 router.beforeEach(async (to) => {
   const menu: Menu = store.state.menu;
   const menu_items = Object.keys(menu.items);
@@ -241,6 +263,10 @@ router.beforeEach(async (to) => {
   }
 });
 
+/**
+ * Finds the index of a menu entry that contains a given route name.
+ * Used as a fallback when the current route does not belong to the selected entry.
+ */
 const find_item_index = (
   user: User,
   menu: Menu,

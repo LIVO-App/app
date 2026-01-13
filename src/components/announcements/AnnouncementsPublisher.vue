@@ -77,6 +77,20 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName AnnouncementsPublisher
+ * @description
+ * Modal content used to compose and publish an announcement.
+ * Collects title/message and (optionally) a list of sections to target.
+ * Writes the publishing request into `store.state.event` and asks the parent to execute it.
+ *
+ * @prop {{id: string}[]} sections - Available section identifiers.
+ * @prop {number} current_section_index - Initial selected section index.
+ *
+ * @event signal_event - Emitted when the component requests the parent to handle the event stored in `store.state.event`.
+ * @event close - Emitted when the modal should be closed.
+ */
+
 import { CustomElement } from "@/types";
 import { getCurrentElement, getIcon } from "@/utils";
 import {

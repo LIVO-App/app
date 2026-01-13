@@ -1,4 +1,5 @@
 <template>
+  <!-- Global alert modal used for confirm and error/success messaging. -->
   <ion-alert
     :is-open="alert_open"
     :header="alert_information.title"
@@ -9,11 +10,13 @@
   />
   <div class="ion-padding-horizontal">
     <ion-grid>
+      <!-- Header row: page title, edit/view controls, logout. -->
       <ion-row class="ion-align-items-center ion-text-start ion-text-sm-end">
         <ion-col size="auto">
           <ionic-element :element="user_card.title" />
         </ion-col>
         <ion-col size="auto">
+          <!-- Edit mode toggle + confirm edits (via alert). -->
           <ionic-element
             v-if="is_edit"
             :element="buttons['view']"
@@ -24,6 +27,7 @@
             :element="buttons['edit']"
             @signal_event="changeModality(true)"
           />
+          <!-- Cancel pending edits (restores original values). -->
           <ionic-element
             v-if="is_edit"
             :element="buttons['cancel']"
@@ -31,14 +35,18 @@
           />
         </ion-col>
         <ion-col>
+          <!-- Logout navigates to the dedicated route. -->
           <ionic-element
             :element="buttons['logout']"
             @signal_event="$router.push({ name: 'logout' })"
           />
         </ion-col>
       </ion-row>
+
+      <!-- Main content: profile image (view/edit) and user data (view/edit). -->
       <ion-row>
         <ion-col size="12" size-md="auto" class="ion-text-center">
+          <!-- In edit mode, show an explicit title above the picture tools. -->
           <ionic-element
             v-if="is_edit"
             :element="
@@ -49,6 +57,8 @@
               )
             "
           />
+
+          <!-- View mode (or edit mode with an existing image): show carousel + optional remove action. -->
           <div
             v-if="!is_edit || images_list.length > 0"
             class="ion-margin-top ion-margin-vertical"
@@ -67,6 +77,8 @@
               @signal_event="removeImage()"
             />
           </div>
+
+          <!-- Edit mode with no image: show the uploader. -->
           <div
             v-if="is_edit && images_list.length == 0"
             class="ion-margin-top ion-margin-vertical"
@@ -82,6 +94,8 @@
             />
           </div>
         </ion-col>
+
+        <!-- Right column: view mode shows a read-only list; edit mode shows editable fields + password. -->
         <ion-col v-if="is_edit" size="12" size-md="6">
           <ionic-element
             :element="user_card.content![user_card.content!.length-1]"
@@ -99,6 +113,8 @@
           </ion-list>
         </ion-col>
       </ion-row>
+
+      <!-- Edit-only fields: name/surname, address, birth date, gender. -->
       <ion-row :key="'user_edit_' + user_trigger" v-if="is_edit">
         <ion-col size="12" size-md="6">
           <ionic-element :element="user_edit_elements['name']" />
@@ -117,6 +133,7 @@
           <ionic-element :element="user_edit_elements['birth_date']" />
         </ion-col>
         <ion-col size="12" size-md="6">
+          <!-- Gender selector: keeps internal value as `Gender | ''` and renders localized label. -->
           <custom-select
             key="gender"
             v-model:selected_option="selected_gender"
@@ -134,6 +151,15 @@
 </template>
 
 <script lang="ts" setup>
+/**
+ * @displayName UserDescription
+ * @description
+ * User profile component that displays and edits the current user's personal data.
+ *
+ * It loads the target user (admin/teacher/student), renders a summary card, and
+ * provides an edit mode to update fields (and optionally password / profile image)
+ * by issuing the appropriate backend requests.
+ */
 import {
   Admin,
   AlertInformation,
@@ -173,9 +199,17 @@ import { useStore } from "vuex";
 
 type availableModal = "confirm" | "success" | "error";
 
+/** Closes the current alert modal. */
 const closeModal = () => {
   alert_open.value = false;
 };
+
+/**
+ * Prepares and opens an alert modal for a given flow.
+ *
+ * Currently, only the confirmation flow is configured here; other windows are
+ * placeholders for future extensions.
+ */
 const setupModalAndOpen = async (window?: availableModal) => {
   const actual_window: availableModal = window || store.state.event.event;
 
@@ -199,6 +233,13 @@ const setupModalAndOpen = async (window?: availableModal) => {
   }
   alert_open.value = true;
 };
+
+/**
+ * Extracts the *raw* value of a field from the read-only `user_card.content`.
+ *
+ * The card content is rendered as "Label: value" strings; this helper removes
+ * the label part and normalizes "-" into an empty string.
+ */
 const getContentValue = (idx: number) => {
   const element = (
     (user_card.content as CustomElement[])[idx].content as string
@@ -206,11 +247,22 @@ const getContentValue = (idx: number) => {
 
   return element == "-" ? "" : element;
 };
+
+/**
+ * Configures the global alert as an error or warning.
+ */
 const setAlertError = (message: string | undefined, is_warning = false) => {
   alert_information.title = getCurrentElement(is_warning ? "warning" : "error");
   alert_information.message = message ?? getCurrentElement("general_error");
   alert_information.buttons = [getCurrentElement("ok")];
 };
+
+/**
+ * Validates pending edits, builds a request set (user info / password / image),
+ * executes backend calls and applies successful changes locally.
+ *
+ * This function is invoked by the confirmation alert handler.
+ */
 const checkAndSendEdits = async () => {
   const edits_correspondences: {
     [key: string]: string[];
@@ -396,6 +448,13 @@ const checkAndSendEdits = async () => {
     alert_open.value = true;
   }, 300);
 };
+
+/**
+ * Applies successful backend changes to the local UI state.
+ *
+ * - On user-info changes: rebuilds the `user_card` and refreshes the view list.
+ * - On image changes: reloads the profile picture.
+ */
 const applyChanges = async (
   successful_changes: {
     [key: string]: boolean;
@@ -428,6 +487,12 @@ const applyChanges = async (
     }
   }
 };
+
+/**
+ * Resets edit fields to the current `user_data` values and reloads the picture.
+ *
+ * By default it returns to view mode (used for cancel action).
+ */
 const resetChanges = async (change_to_view = true) => {
   user_edit_elements["name"].content = user_data.name;
   user_edit_elements["surname"].content = user_data.surname;
@@ -442,9 +507,17 @@ const resetChanges = async (change_to_view = true) => {
   await loadProfilePicture();
   changeModality(!change_to_view);
 };
+
+/** Toggles between view and edit mode. */
 const changeModality = (change_to_edit: boolean) => {
   is_edit.value = change_to_edit;
 };
+
+/**
+ * Loads the current profile picture from the backend and updates the carousel.
+ *
+ * In edit mode, `images_list` can temporarily hold a `File` selected by the user.
+ */
 const loadProfilePicture = async () => {
   profile_picture = await executeLink(
     "/v1/images/" + user.type + "/" + user.id,
@@ -459,6 +532,8 @@ const loadProfilePicture = async () => {
     profile_picture == undefined ? require("@/assets/person.png") : undefined;
   image_trigger.value++;
 };
+
+/** Removes the current image selection (marks the image for deletion on save). */
 const removeImage = () => {
   images_list.value = [];
 };

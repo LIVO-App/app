@@ -19,6 +19,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName InnerHeader
+ * @description
+ * “Compact” (Ionic) header used on inner pages as a secondary bar.
+ */
+
 import { IonHeader, IonToolbar, IonTitle } from "@ionic/vue";
 
 const props = defineProps(["title", "subtitle"]);

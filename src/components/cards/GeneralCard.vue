@@ -1,4 +1,5 @@
 <template>
+  <!-- Main card wrapper with dynamic background and clickable behavior -->
   <ion-card
     :color="
       selected
@@ -48,6 +49,7 @@
       }
     "
   >
+    <!-- Card header section: title, subtitle, and optional side element -->
     <ion-card-header
       v-if="title_ref != undefined || subtitle_ref != undefined"
       class="ion-no-padding"
@@ -55,6 +57,7 @@
     >
       <ion-grid class="ion-no-margin">
         <ion-row class="ion-align-items-center">
+          <!-- Title column -->
           <ion-col size="auto">
             <ion-card-title v-if="title_ref != undefined"
               ><b
@@ -64,6 +67,7 @@
                   @signal_event="$emit('signal_event')" /></b
             ></ion-card-title>
           </ion-col>
+          <!-- Subtitle column -->
           <ion-col size="auto">
             <ion-card-subtitle v-if="subtitle_ref != undefined"
               ><ionic-element
@@ -73,6 +77,7 @@
             /></ion-card-subtitle>
           </ion-col>
           <ion-col size="1"></ion-col>
+          <!-- Side element column (when no content) -->
           <ion-col size-sm="auto" size="12">
             <ionic-element
               v-if="content_ref == undefined && side_element_ref != undefined"
@@ -84,13 +89,16 @@
         </ion-row>
       </ion-grid>
     </ion-card-header>
+    <!-- Card content section: main content elements with optional layout -->
     <ion-card-content
       v-if="content_ref != undefined"
       :class="getBreakpointClasses(classes?.content, breakpoint)"
     >
+      <!-- Content with side element: two-column layout -->
       <ion-grid v-if="side_element_ref != undefined">
         <ion-row>
           <ion-col>
+            <!-- Linear layout: render elements sequentially -->
             <template
               v-if="actual_layout == undefined || !isMatrix(actual_layout)"
             >
@@ -108,6 +116,7 @@
                 @signal_event="$emit('signal_event')"
               />
             </template>
+            <!-- Matrix layout: render elements in a responsive grid -->
             <ion-grid v-else>
               <ion-row
                 v-for="(row, r) in actual_layout"
@@ -136,6 +145,7 @@
               </ion-row>
             </ion-grid>
           </ion-col>
+          <!-- Side element column with left border -->
           <ion-col
             size="auto"
             style="border-left: 1px solid var(--ion-color-dark)"
@@ -148,7 +158,9 @@
           </ion-col>
         </ion-row>
       </ion-grid>
+      <!-- Content without side element -->
       <template v-else>
+        <!-- Linear layout: render elements sequentially -->
         <template v-if="actual_layout == undefined || !isMatrix(actual_layout)">
           <ionic-element
             v-for="element in actual_layout == undefined
@@ -162,6 +174,7 @@
             @signal_event="$emit('signal_event')"
           />
         </template>
+        <!-- Matrix layout: render elements in a responsive grid -->
         <ion-grid v-else>
           <ion-row
             v-for="(row, r) in actual_layout"
@@ -193,6 +206,36 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName GeneralCard
+ * @description
+ * Generic card renderer used across the app to display data-driven content.
+ * Renders a title/subtitle plus a list (or matrix) of `CustomElement` items, optionally with a side element.
+ *
+ * Link handling:
+ * - If `link` is an event link, it writes `store.state.event` and emits `signal_event`.
+ * - If `link` is a non-GET request link, it writes `store.state.request` and emits `execute_link`.
+ *
+ * @prop {(string|number)} id - Identifier used by selection and event payloads.
+ * @prop {CustomElement} [title] - Card title element.
+ * @prop {CustomElement} [subtitle] - Card subtitle element.
+ * @prop {CustomElement[]} [content] - Main content elements.
+ * @prop {Layout} [layout] - Optional responsive layout definition for content.
+ * @prop {CustomElement} [side_element] - Optional element rendered in a side column.
+ * @prop {boolean} [selected] - Enables selection behavior and related event payload.
+ * @prop {boolean} [hovered] - External hover state.
+ * @prop {LinkParameters} [link] - Optional link action to execute on click.
+ * @prop {Colors<GeneralCardSubElements>} [colors] - Optional color overrides.
+ * @prop {Classes<CardSubElements>} [classes] - Optional breakpoint-aware class overrides.
+ *
+ * @event update:title - Emitted when `title` is edited via v-model.
+ * @event update:subtitle - Emitted when `subtitle` is edited via v-model.
+ * @event update:content - Emitted when `content` is edited via v-model.
+ * @event update:side_element - Emitted when `side_element` is edited via v-model.
+ * @event execute_link - Emitted when a request-link should be executed by the parent.
+ * @event signal_event - Emitted when an event-link should be handled by the parent.
+ */
+
 import {
   CardSubElements,
   Classes,
@@ -230,6 +273,7 @@ import { PropType, ref, toRef, watch } from "vue";
 import { useStore } from "vuex";
 IonLabel;
 
+/** Update the current breakpoint */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
   actual_layout.value = getLayout(props.layout, breakpoint.value);

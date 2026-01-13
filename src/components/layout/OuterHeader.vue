@@ -22,6 +22,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName OuterHeader
+ * @description
+ * Main (Ionic) header with menu button and title/subtitle.
+ * Used in `views/` as the “outer” top bar.
+ *
+ * @props {string} title - Page title.
+ * @props {string} [subtitle] - Optional subtitle.
+ */
+
 import {
   IonHeader,
   IonToolbar,

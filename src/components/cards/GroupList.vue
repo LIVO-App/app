@@ -39,6 +39,26 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName GroupList
+ * @description
+ * Grouped list renderer for `CardElements`.
+ * Shows a divider label and then renders each item through `CardItem`.
+ * If the list is empty, it displays `emptiness_message`.
+ *
+ * @prop {CustomElement} emptiness_message - Message shown when `cards_list` is empty.
+ * @prop {CustomElement} divider - Divider element shown above the group.
+ * @prop {CardElements[]} cards_list - Cards in this group.
+ * @prop {Colors<GeneralCardSubElements>} [colors] - Optional color overrides.
+ * @prop {Classes<CardsCommonElements>} [classes] - Optional breakpoint-aware class overrides.
+ *
+ * @event update:emptiness_message - Emitted when `emptiness_message` is edited via v-model.
+ * @event update:divider - Emitted when `divider` is edited via v-model.
+ * @event update:cards_list - Emitted when `cards_list` is edited via v-model.
+ * @event execute_link - Emitted when a request-link should be executed by the parent.
+ * @event signal_event - Emitted when an event-link should be handled by the parent.
+ */
+
 import {
   CardElements,
   CardsCommonElements,

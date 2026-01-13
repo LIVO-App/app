@@ -12,6 +12,11 @@ import {
 } from "./types";
 import { Method } from "axios";
 
+/**
+ * Vuex typing extensions for the app.
+ * Defines the `State` shape and enables `$store` typing in components.
+ */
+
 declare module "@vue/runtime-core" {
   interface State {
     menu: Menu;

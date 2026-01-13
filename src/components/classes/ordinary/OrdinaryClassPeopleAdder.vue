@@ -1,4 +1,5 @@
 <template>
+  <!-- Teachers modal: search/select teacher, set coordinator flag, choose teachings, then confirm -->
   <ion-modal
     id="teachers"
     :is-open="teachers_open"
@@ -28,6 +29,7 @@
       @close="closeModal('teachers')"
     >
       <template v-slot:parameters>
+        <!-- Filter available teachers by surname/name prefix -->
         <ion-searchbar
           show-clear-button="focus"
           :value="teacher_filter"
@@ -40,6 +42,8 @@
               )
           "
         ></ion-searchbar>
+
+        <!-- Pick a teacher from the filtered list (selection is toggled by @signal_event) -->
         <list-card
           :key="'teacher_choice_' + select_trigger"
           :emptiness_message="
@@ -68,6 +72,8 @@
           }"
           @signal_event="selectTeacher()"
         />
+
+        <!-- Extra teacher parameters: coordinator flag -->
         <div
           class="ion-padding-top ion-padding-start ion-align-items-center"
           style="display: flex"
@@ -85,6 +91,8 @@
           />
           <ionic-element v-model:element="elements[0]" />
         </div>
+
+        <!-- Extra teacher parameters: teaching selection (adding one choice appends it to teaching_data) -->
         <div style="padding-left: 5px">
           <custom-select
             key="teaching_choice"
@@ -97,6 +105,8 @@
             :no_padding="true"
           />
         </div>
+
+        <!-- Review/remove selected teachings for the currently selected teacher -->
         <list-card
           :key="teaching_trigger"
           :emptiness_message="
@@ -108,6 +118,8 @@
       </template>
     </simple-adder>
   </ion-modal>
+
+  <!-- Students modal: filter and add students (confirm is disabled; entries are sent immediately on the parent flow) -->
   <ion-modal
     id="students"
     :is-open="students_open"
@@ -138,6 +150,7 @@
       @close="closeModal('students')"
     >
       <template v-slot:parameters>
+        <!-- Filter available students by surname/name prefix -->
         <ion-searchbar
           show-clear-button="focus"
           :value="student_filter"
@@ -150,6 +163,8 @@
               )
           "
         ></ion-searchbar>
+
+        <!-- Pick a student from the filtered list (selection triggers addRow('students')) -->
         <list-card
           :key="'student_choice_' + select_trigger"
           :emptiness_message="
@@ -181,6 +196,8 @@
       </template>
     </simple-adder>
   </ion-modal>
+
+  <!-- Section label + action buttons (open modals based on the global event set by the clicked button) -->
   <ionic-element
     :element="
       getCustomMessage(
@@ -201,6 +218,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName OrdinaryClassPeopleAdder
+ * @description
+ * Action component used inside an ordinary class page to **add/remove people**.
+ *
+ * It opens modals for:
+ * - selecting teachers (with optional coordinator flag and teachings selection),
+ * - selecting students,
+ * and then sends the chosen people to the backend for the target class/section.
+ */
 import {
   CustomElement,
   GeneralCardElements,
@@ -223,6 +250,12 @@ import { useStore } from "vuex";
 
 type availableModal = "teachers" | "students";
 
+/**
+ * Opens the correct modal based on the event stored in the global Vuex state.
+ *
+ * The `buttons` elements are configured to emit an event value (`teachers`/`students`);
+ * the surrounding page translates that into `store.state.event.event`.
+ */
 const setupModalAndOpen = async () => {
   const window: availableModal = store.state.event.event;
 
@@ -235,6 +268,12 @@ const setupModalAndOpen = async () => {
       break;
   }
 };
+
+/**
+ * Closes the requested modal and clears temporary selections.
+ *
+ * This is used both by explicit close actions and by the Ionic modal dismiss event.
+ */
 const closeModal = (window: availableModal) => {
   resetLists();
   switch (window) {
@@ -246,6 +285,14 @@ const closeModal = (window: availableModal) => {
       break;
   }
 };
+
+/**
+ * Adds an item to the local “to be sent” list.
+ *
+ * - `teachers`: requires a teacher selection AND at least one selected teaching.
+ * - `students`: adds the student id coming from the last emitted event.
+ * - `teachings`: appends the currently selected teaching to `teaching_data`.
+ */
 const addRow = (window: availableModal | "teachings") => {
   let teacher: Teacher;
 
@@ -439,6 +486,12 @@ const addRow = (window: availableModal | "teachings") => {
     teaching_trigger.value++;
   }
 };
+
+/**
+ * Removes an item from one of the selection lists.
+ *
+ * The actual id is read from the global event payload (`store.state.event.data`).
+ */
 const removeRow = (window: availableModal | "teachings") => {
   let data: OrderedCardsList<GeneralCardElements>, id_key: string;
 
@@ -457,6 +510,16 @@ const removeRow = (window: availableModal | "teachings") => {
   );
   trigger.value++;
 };
+
+/**
+ * Sends the currently selected list (teachers or students) to the backend.
+ *
+ * On success it:
+ * - clears local selections,
+ * - removes the submitted ids from the full list (`all_*`),
+ * - refreshes the filtered list via `changeFilter`,
+ * - closes the modal and emits a UI notification event.
+ */
 const sendData = (window: availableModal) => {
   let data: OrderedCardsList<GeneralCardElements>,
     available_data: OrderedCardsList<GeneralCardElements>,
@@ -592,6 +655,13 @@ const sendData = (window: availableModal) => {
         }
   );
 };
+
+/**
+ * Updates a filtered list in-place based on the provided search string.
+ *
+ * This keeps teacher selection stable by re-marking the previously selected id,
+ * even when the filter changes.
+ */
 const changeFilter = (
   new_filter: string,
   data: OrderedCardsList<GeneralCardElements>,
@@ -619,6 +689,10 @@ const changeFilter = (
   }
   select_trigger.value++;
 };
+
+/**
+ * Finds a card index either by explicit id (when provided) or by `selected` flag.
+ */
 const find_element = (
   list: OrderedCardsList<GeneralCardElements>,
   id?: string
@@ -630,6 +704,12 @@ const find_element = (
       return a.selected;
     }
   });
+
+/**
+ * Toggles teacher selection inside the “available teachers” list.
+ *
+ * Clicking the same teacher twice unselects it.
+ */
 const selectTeacher = () => {
   if (selected_teacher_indexes.value != -1) {
     selectedChange(available_teachers);
@@ -647,6 +727,10 @@ const selectTeacher = () => {
     selectedChange(available_teachers);
   }
 };
+
+/**
+ * Applies selection state to the given list and forces a rerender via `trigger`.
+ */
 const selectedChange = (
   list: OrderedCardsList<GeneralCardElements>,
   index = selected_teacher_indexes.value,
@@ -655,12 +739,26 @@ const selectedChange = (
   list.cards[""][index].selected = value;
   trigger.value++;
 };
+
+/**
+ * Human-readable teaching label in the current language.
+ */
 const teachingToString = (teaching: Teaching) => teaching[`${language}_title`];
+
+/**
+ * Clears selections in all “to be sent” lists.
+ *
+ * Note: this does not reset filters nor the cached `all_*` lists.
+ */
 const resetLists = () => {
   teachers_data.cards[""] = [];
   teaching_data.cards[""] = [];
   students_data.cards[""] = [];
 };
+
+/**
+ * Removes one teaching from the teaching selection list.
+ */
 const removeTeaching = () => {
   teaching_data.cards[""] = teaching_data.cards[""].filter(
     (card) => card.id !== store.state.event.data.id
@@ -863,6 +961,7 @@ await executeLink(
 );
 
 watch(selected_teaching, (new_teaching) => {
+  // Selecting a teaching in the dropdown immediately appends it to `teaching_data`.
   if (new_teaching !== "") {
     addRow("teachings");
     selected_teaching.value = "";

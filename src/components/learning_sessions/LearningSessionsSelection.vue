@@ -1,8 +1,13 @@
 <template>
+  <!-- Two-column selection UI:
+       - left: learning sessions grouped by school year
+       - right: courses/classes related to the selected session
+  -->
   <ion-grid
     ><!-- v-if="learning_sessions.loaded">-->
     <ion-row>
       <ion-col size="12" size-md="6">
+        <!-- Learning sessions list (clicking a card updates selection through store.state.event). -->
         <list-card
           :title="
             getCustomMessage('title', getCurrentElement('learning_sessions'))
@@ -30,6 +35,9 @@
         />
       </ion-col>
       <ion-col size="12" size-md="6">
+        <!-- Courses list for the selected session.
+             Shows a placeholder message when nothing is selected.
+        -->
         <list-card
           :key="trigger"
           :title="getCustomMessage('title', getCurrentElement('courses'))"
@@ -63,6 +71,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName LearningSessionsSelection
+ * @description
+ * Teacher view to select a learning session and list related/associated courses/classes for that session.
+ * Left panel: sessions list. Right panel: courses grouped by “teacher” vs “associated”.
+ *
+ * Selection is driven by `store.state.event` (selected card id) and the component updates card selection state.
+ */
+
 import {
   GeneralCardElements,
   LearningSession,
@@ -80,8 +97,18 @@ type Indexes = {
   index: number;
 };
 
+/**
+ * Returns true when no learning session is currently selected.
+ */
 const is_nothing_selected = () =>
   selected_session_indexes.year == "-1" && selected_session_indexes.index == -1;
+
+/**
+ * Finds the (year, index) position of a session card.
+ *
+ * If `id` is provided, it searches by card id; otherwise it returns the first
+ * card that is currently marked as selected.
+ */
 const find_session = (
   learning_sessions: OrderedCardsList<GeneralCardElements>,
   id?: string
@@ -111,6 +138,15 @@ const find_session = (
     index: index,
   };
 };
+
+/**
+ * Toggles the selected learning session and refreshes the courses list.
+ *
+ * Selection is driven by `store.state.event.data.id` (the clicked card). When a
+ * session becomes selected, this loads:
+ * - "teacher" project classes for that session
+ * - "associated" project classes not already included above
+ */
 const changeSelection = async () => {
   const tmp_classes: {
     teacher: {
@@ -221,6 +257,12 @@ const changeSelection = async () => {
     selectedChange();
   }
 };
+
+/**
+ * Updates the visual selection state on the chosen session card.
+ *
+ * `trigger` is incremented to force a re-render of the ListCard group.
+ */
 const selectedChange = (
   year = selected_session_indexes.year,
   index = selected_session_indexes.index,
@@ -261,11 +303,13 @@ const courses: OrderedCardsList<GeneralCardElements> = reactive({
     associated: [],
   },
 });
-const teaching_years: number[] = (await executeLink(
-  "/v1/teachers/" + user.id + "/active_years",
-  (response: any) => response.data.data.map((a: any) => a.year),
-  () => []
-)).reverse();
+const teaching_years: number[] = (
+  await executeLink(
+    "/v1/teachers/" + user.id + "/active_years",
+    (response: any) => response.data.data.map((a: any) => a.year),
+    () => []
+  )
+).reverse();
 const trigger = ref(0);
 
 let selected_session_indexes: Indexes = reactive({
@@ -273,6 +317,7 @@ let selected_session_indexes: Indexes = reactive({
   index: -1,
 });
 
+// Initial load: fetch all teaching-years sessions and group them by school year.
 for (const year of teaching_years) {
   promises.push(
     executeLink(

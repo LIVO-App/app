@@ -31,6 +31,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ImageUploader
+ * @description
+ * Dropzone + file picker to select images (jpg/jpeg/png).
+ * Validates count and duplicates; on error emits `signal_event` with a message.
+ */
+
 import { ImageDescriptor } from "@/types";
 import { getCurrentElement } from "@/utils";
 import { ref, watch } from "vue";

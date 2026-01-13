@@ -1,5 +1,6 @@
 <template>
   <div class="ion-padding-horizontal">
+    <!-- Global alert used for enrollment errors and constraint warnings (max credits/courses, unauthorized, etc.). -->
     <ion-alert
       :is-open="openAlert"
       :header="alert_information.title"
@@ -7,6 +8,8 @@
       :buttons="alert_information.buttons"
       @didDismiss="closeModal('max_credits')"
     />
+
+    <!-- Course details modal (opens CourseDescription for the selected course card). -->
     <ion-modal
       :is-open="description_open"
       @didDismiss="closeModal('course_details')"
@@ -26,6 +29,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Confirmation modal with a countdown (used for static subscriptions and pending states). -->
     <ion-modal
       :is-open="confirmation_open"
       :can-dismiss="() => !confirmation_open"
@@ -96,6 +101,8 @@
         </ion-grid>
       </ion-content>
     </ion-modal>
+
+    <!-- Optional session header: shows current learning session details when route param is present. -->
     <suspense v-if="$route.params.id != undefined">
       <template #default>
         <session-description
@@ -110,6 +117,8 @@
         <loading-component />
       </template>
     </suspense>
+
+    <!-- Filters: learning context + learning area selectors. -->
     <ion-grid class="ion-no-padding">
       <ion-row class="ion-no-padding">
         <ion-col size="auto" class="ion-no-padding">
@@ -134,6 +143,8 @@
         </ion-col>
       </ion-row>
     </ion-grid>
+
+    <!-- Courses list: cards list allows open details (signal_event) and subscribe/unsubscribe (execute_link). -->
     <list-card
       :key="trigger"
       @execute_link="changeEnrollment()"
@@ -161,6 +172,18 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CoursesSelectionList
+ * @description
+ * Student course enrollment UI.
+ * Lets the user browse proposed courses by learning context/area and subscribe/unsubscribe.
+ * Opens `CourseDescription` for details and uses `SubscriptionsManager` to enforce constraints
+ * (max courses/credits and availability checks).
+ *
+ * @event execute_link - Triggered when a subscription request should be executed.
+ * @event signal_event - Triggered for UI actions like opening details/confirmations.
+ */
+
 import { OrdinaryClass } from "@/types";
 import {
   EnrollmentCardElements,
@@ -215,6 +238,16 @@ type AvailableModal =
   | "error";
 //| "general_error";
 
+/**
+ * Execute the current subscription/unsubscription request stored in Vuex.
+ *
+ * This function:
+ * - parses the request url from `store.state.request.url`,
+ * - checks enrollment constraints via `SubscriptionsManager`,
+ * - executes the backend request via `executeLink`,
+ * - updates local card lists and credits, and
+ * - opens confirmations/alerts when needed.
+ */
 const changeEnrollment = async () => {
   const requestArray = store.state.request.url.split("?"); //<!-- TODO (9): usare classe URL
   const pathArray = requestArray[0].split("/");
@@ -315,6 +348,13 @@ const changeEnrollment = async () => {
     setAlertAndOpen("error");
   }
 };
+
+/**
+ * Get the localized title for a learning area option.
+ *
+ * The option may come from a distribution list, so the function resolves the canonical
+ * LearningArea object from `learning_areas_structures.list` before returning its title.
+ */
 const getCorrectName = (option: LearningArea) => {
   const language = getCurrentLanguage();
 
@@ -326,6 +366,13 @@ const getCorrectName = (option: LearningArea) => {
     ? tmp_learning_area[`${language}_title`]
     : "";
 };
+
+/**
+ * Configure the global alert information (title/message) for a given modal type and open it.
+ *
+ * @param window The type of alert to show (defaults to current Vuex event).
+ * @param message Optional message override (defaults to Vuex event payload message).
+ */
 const setAlertAndOpen = (
   window: AvailableModal = store.state.event.event,
   message: string = store.state.event.data?.message
@@ -353,6 +400,10 @@ const setAlertAndOpen = (
   }
   openAlert.value = true;
 };
+
+/**
+ * Close a specific modal/alert window.
+ */
 const closeModal = (window: AvailableModal) => {
   switch (window) {
     case "course_details":
@@ -367,12 +418,21 @@ const closeModal = (window: AvailableModal) => {
       break;
   }
 };
+
+/**
+ * Open the course details modal using the course payload coming from the Vuex event bus.
+ */
 const openDescription = () => {
   description.title = store.state.event.data.title;
   description.course_id = store.state.event.data.course_id;
   description.section = store.state.event.data.section;
   description_open.value = true;
 };
+
+/**
+ * Open the confirmation modal and start a countdown timer.
+ * When the timer reaches 0, the confirmation is auto-declined.
+ */
 const openConfirmation = () => {
   confirmation_open.value = true;
   timer_bar.value = 1;
@@ -383,9 +443,21 @@ const openConfirmation = () => {
     }
   }, 300);
 };
+
+/**
+ * Send the user choice from the confirmation modal.
+ * The outcome is provided via the Vuex event payload.
+ */
 const sendConfirmation = async () => {
   await confirm(store.state.event.data.outcome);
 };
+
+/**
+ * Confirm or reject a pending subscription.
+ *
+ * @param outcome True to confirm; false to reject.
+ * @param time_expired When true, the request was triggered automatically by the countdown.
+ */
 const confirm = async (outcome: boolean, time_expired = false) => {
   clearInterval(timer);
   try {
@@ -432,6 +504,10 @@ const getBarColor = computed(() => {
     return "danger";
   }
 });
+
+/**
+ * Update the learning area selector placeholder based on the selected context.
+ */
 const updateLearningAreaPlaceholder = (context_id: string) => {
   placeholder =
     learning_areas_structures.distribution[context_id].length > 0
@@ -621,12 +697,16 @@ if (learning_session != undefined && ordinary_class != undefined) {
       );
 
       updateLearningAreaPlaceholder(selected_context.value);
+
+      // Refresh the visible courses list when the selected learning area changes.
       watch(selected_area, (new_area) => {
         subscriptions_manager.showCourses(selected_context.value, new_area);
         trigger.value++;
       });
     }
   }
+
+  // When the context changes, reset the area selection and refresh the visible courses list.
   watch(selected_context, (new_context) => {
     updateLearningAreaPlaceholder(new_context);
     selected_area.value =

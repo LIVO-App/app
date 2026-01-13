@@ -1,3 +1,11 @@
+/**
+ * LIVOApp entry point.
+ *
+ * Bootstraps Vue 3 + IonicVue + Vue Router + Vuex and registers reusable
+ * components as global components so they can be used across `views/` and
+ * feature components without repetitive imports.
+ */
+
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";

@@ -24,6 +24,22 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CardsGrid
+ * @description
+ * Responsive grid renderer for an array of `CardElements`.
+ * Each entry is rendered through `CardItem` and events are propagated to the parent.
+ *
+ * @prop {CardElements[]} cards_list - Cards to render.
+ * @prop {number} columns - Number of columns (used to compute Ionic column widths).
+ * @prop {Colors<GeneralCardSubElements>} [colors] - Optional container color overrides.
+ * @prop {Classes<CardsGridElements>} [classes] - Optional breakpoint-aware class overrides.
+ *
+ * @event update:cards_list - Emitted when `cards_list` is edited via v-model.
+ * @event execute_link - Emitted when a request-link should be executed by the parent.
+ * @event signal_event - Emitted when an event-link should be handled by the parent.
+ */
+
 import {
   CardElements,
   CardsGridElements,

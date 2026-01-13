@@ -4,6 +4,14 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName OverallStudentDescription
+ * @description
+ * Aggregated student profile view.
+ *
+ * It composes `StudentDescription` and `CurriculumList` and takes the student id
+ * from the current route.
+ */
 import { useRoute } from "vue-router";
 
 const $route = useRoute();

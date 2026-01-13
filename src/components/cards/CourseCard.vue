@@ -34,6 +34,22 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CourseCard
+ * @description
+ * Course-specific card used mainly in selection/enrollment flows.
+ * Renders a compact row of `CustomElement` blocks and an optional action button
+ * (visible when `enrollment.editable` and `content` provides a 4th element).
+ *
+ * @prop {number} credits - Course credits (used by parent flows).
+ * @prop {CustomElement[]} content - Elements to render (expects at least 3; optionally a 4th action element).
+ * @prop {Enrollment} enrollment - Enrollment metadata controlling editability and actions.
+ * @prop {Colors<GeneralCardSubElements>} [colors] - Optional color overrides.
+ *
+ * @event execute_link - Emitted when the action element represents a request-link.
+ * @event signal_event - Emitted when an inner element signals a UI event.
+ */
+
 import { CustomElement, Colors, GeneralCardSubElements } from "@/types";
 import { Enrollment } from "@/types";
 import { getBreakpoint, isSmaller } from "@/utils";

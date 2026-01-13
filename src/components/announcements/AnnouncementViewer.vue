@@ -22,6 +22,18 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName AnnouncementViewer
+ * @description
+ * Modal content that displays a single announcement.
+ * Fetches the announcement body from the backend and renders it as an HTML `CustomElement`.
+ *
+ * @prop {string} title - Announcement title (already resolved by parent).
+ * @prop {number} id - Announcement identifier used to fetch details.
+ *
+ * @event close - Emitted when the user closes the modal.
+ */
+
 import { CustomElement } from "@/types";
 import { executeLink, getCurrentLanguage, getIcon } from "@/utils";
 import { IonHeader, IonToolbar, IonGrid, IonRow, IonCol } from "@ionic/vue";

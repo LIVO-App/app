@@ -1,5 +1,6 @@
 <template>
   <div class="ion-padding-horizontal">
+    <!-- Global alert used by the proposition workflow (errors, confirmations, success). -->
     <ion-alert
       :is-open="alert_open"
       :header="alert_information.title"
@@ -27,10 +28,13 @@
     </ion-modal>-->
     <!-- TODO (4): aggiungere pulsante aggiunta immagini -->
     <div class="ion-margin-top ion-margin-start">
+      <!-- Top-level navigation / back button. -->
       <ionic-element
         :element="buttons[3]"
         @execute_link="$router.push(store.state.request.url)"
       />
+
+      <!-- Admin-only actions: approve/reject and toggle between view/edit. -->
       <div v-if="user.type == 'admin' && !allApproed()" class="ion-padding-top">
         <ionic-element
           v-if="action == 'view'"
@@ -48,6 +52,8 @@
         />
       </div>
     </div>
+
+    <!-- Reference model selector (enabled only when proposing a new course). -->
     <custom-select
       :key="trigger"
       v-model:selected_option="selected_model"
@@ -59,6 +65,8 @@
       :disabled="action != 'propose'"
     />
     <!-- TODO (4): mettere filtro su modelli -->
+
+    <!-- Wizard-like card: renders the current page and its inputs. -->
     <ion-card :key="trigger">
       <ion-card-header>
         <ion-card-title class="ion-text-center" color="white">{{
@@ -69,6 +77,7 @@
       </ion-card-header>
       <ion-card-content style="overflow-y: auto">
         <ion-grid>
+          <!-- Wizard pages rendered as localized fields (title + rich-text editor pages). -->
           <template
             v-if="
               pages[current_page_index] == 'title' ||
@@ -79,6 +88,7 @@
           >
             <ion-row v-for="language in languages" :key="language">
               <ion-col>
+                <!-- Page: Title (per-language plain input). -->
                 <ion-input
                   v-if="pages[current_page_index] == 'title'"
                   type="text"
@@ -114,6 +124,7 @@
                   v-else-if="pages[current_page_index] == 'description'"
                   class="ion-margin-vertical"
                 >
+                  <!-- Page: Description (per-language rich-text editor). -->
                   <b
                     ><ionic-element
                       :element="
@@ -158,6 +169,7 @@
                   "
                   class="ion-margin-vertical"
                 >
+                  <!-- Page: Expected learning results (per-language rich-text editor). -->
                   <b
                     ><ionic-element
                       :element="
@@ -200,6 +212,7 @@
                   v-else-if="pages[current_page_index] == 'criterions'"
                   class="ion-margin-vertical"
                 >
+                  <!-- Page: Assessment criterions (per-language rich-text editor). -->
                   <b
                     ><ionic-element
                       :element="
@@ -242,6 +255,7 @@
                   v-else-if="pages[current_page_index] == 'activities'"
                   class="ion-margin-vertical"
                 >
+                  <!-- Page: Activities (per-language rich-text editor). -->
                   <b
                     ><ionic-element
                       :element="
@@ -283,6 +297,8 @@
               </ion-col>
             </ion-row>
           </template>
+
+          <!-- Page: Characteristics #1 (numbers + learning area selection). -->
           <template v-else-if="pages[current_page_index] == 'characteristics1'">
             <ion-row>
               <ion-col>
@@ -318,6 +334,7 @@
             </ion-row>
             <ion-row>
               <ion-col>
+                <!-- Students per section constraints. -->
                 <ionic-element
                   :element="
                     getCustomMessage(
@@ -371,6 +388,8 @@
               </ion-col>
             </ion-row>
           </template>
+
+          <!-- Page: Characteristics #2 (teachings and growth areas selection + summary cards). -->
           <template v-else-if="pages[current_page_index] == 'characteristics2'">
             <ion-row>
               <!--<custom-select
@@ -390,6 +409,7 @@
                 v-for="key in Object.keys(course_proposition.characteristics2)"
                 :key="key"
               >
+                <!-- Select + cards list for either teachings or growth areas (depending on key). -->
                 <ionic-element
                   :element="
                     getCustomMessage(
@@ -406,6 +426,7 @@
                     (action == 'edit' && !approved.course)
                   "
                 >
+                  <!-- Input selector (enabled only in propose/edit when not approved). -->
                   <custom-select
                     v-if="key == 'teaching_list'"
                     :key="trigger + '_teachings_select'"
@@ -427,6 +448,7 @@
                     :getCompleteName="getTitle"
                   />
                 </template>
+                <!-- List-card also acts as the remove action source via @signal_event. -->
                 <list-card
                   :key="trigger + '_list'"
                   :cards_list="
@@ -453,6 +475,8 @@
               </ion-col>
             </ion-row>
           </template>
+
+          <!-- Page: Access rules (who can subscribe based on context/address/year). -->
           <template v-else-if="pages[current_page_index] == 'access_object'">
             <ion-grid>
               <template
@@ -460,6 +484,7 @@
                   action == 'propose' || (action == 'edit' && !approved.course)
                 "
               >
+                <!-- Access rule builder: choose context + address + year and add to the list. -->
                 <ion-row>
                   <ion-col>
                     <custom-select
@@ -533,6 +558,7 @@
                 </ion-row>
                 <ion-row>
                   <ion-col>
+                    <!-- Commit the currently selected access rule. -->
                     <ion-button
                       @click="addElement('access')"
                       expand="block"
@@ -545,6 +571,7 @@
               </template>
               <ion-row>
                 <ion-col>
+                  <!-- Existing access propositions as cards. -->
                   <list-card
                     :key="trigger + '_list'"
                     :cards_list="access_propositions_cards"
@@ -560,6 +587,8 @@
               </ion-row>
             </ion-grid>
           </template>
+
+          <!-- Page: Images (carousel in view mode, uploader in propose/edit, reorder list when applicable). -->
           <template v-else-if="pages[current_page_index] == 'images_list'">
             <!--
             <ion-col v-if="grande && (no_reorder)" vuoto>
@@ -586,6 +615,7 @@
                   size-lg="6"
                   class="ion-text-center"
                 >
+                  <!-- Read-only visualization: carousel when images exist, placeholder otherwise. -->
                   <image-carousel
                     :key="carousel_trigger"
                     v-if="images_list.length > 0"
@@ -610,6 +640,7 @@
                   />
                 </ion-col>
                 <ion-col v-else size="12" size-lg="6">
+                  <!-- Upload UI used when editing/proposing (teachers cannot upload in view mode). -->
                   <image-uploader
                     v-model:images_list="images_list"
                     v-model:progress_infos="progress_infos"
@@ -621,6 +652,7 @@
                   size="12"
                   size-lg="6"
                 >
+                  <!-- Optional ordering UI (drag & drop) when images exist and editing is allowed. -->
                   <ionic-element
                     :element="
                       getCustomMessage(
@@ -648,12 +680,15 @@
               </ion-row>
             </ion-grid>
           </template>
+
+          <!-- Page: Project-class specific information + teachers list. -->
           <template
             v-else-if="pages[current_page_index] == 'specific_information'"
           >
             <ion-grid>
               <ion-row>
                 <ion-col>
+                  <!-- Project class metadata (session, group, section count, code). -->
                   <custom-select
                     v-model:selected_option="selected_session"
                     :list="learning_sessions"
@@ -714,6 +749,7 @@
                   </div>
                 </ion-col>
                 <ion-col>
+                  <!-- Teachers proposition: selector + (optional) sections selection + cards list. -->
                   <ionic-element
                     :element="
                       getCustomMessage(
@@ -784,6 +820,7 @@
                   >
                     {{ getCurrentElement("add") }}
                   </ion-button>
+                  <!-- Proposed teachers as cards (also provides remove action source via @signal_event). -->
                   <list-card
                     :key="trigger + '_list'"
                     :cards_list="teachers_cards"
@@ -799,6 +836,8 @@
               </ion-row>
             </ion-grid>
           </template>
+
+          <!-- Footer: wizard navigation (previous/next). -->
           <ion-row
             class="ion-text-center"
             style="border-top: 1px solid var(--ion-color-dark)"
@@ -821,6 +860,7 @@
           <!--<template v-if="parameters_remaining">-->
           <ion-row>
             <ion-col>
+              <!-- Final action: submit the proposition (available only in propose mode). -->
               <ion-button
                 v-if="action == 'propose'"
                 @click="checkAndConfirm"
@@ -840,6 +880,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CourseProposition
+ * @description
+ * Multi-step UI to propose/view/edit a course model.
+ * Uses rich-text editors for HTML fields, supports validation and an admin approval workflow.
+ *
+ * The component reacts to UI events stored in Vuex (`store.state.event`) and executes backend actions
+ * via `executeLink`, depending on the current mode (propose/view/edit) and the user role.
+ */
+
 import {
   CourseModelProps,
   ModelProposition,
@@ -919,11 +969,25 @@ type SimpleList<T> = {
   selected: T[];
 };
 
+/**
+ * Convert a course model instance to its display string.
+ * Used by selectors and UI bindings.
+ */
 const modelToString = (model: CourseModel) => model.toString();
+
+/**
+ * Convert a learning area to its localized title.
+ */
 const learningAreaToString = (learning_area: LearningArea) =>
   learning_area[`${language}_title`];
 /*const growthAreaToString = (growth_area: GrowthArea) =>
   growth_area[`${language}_title`];*/
+
+/**
+ * Move the wizard forward/backward by one page.
+ *
+ * @param direction When true goes forward; when false goes backward.
+ */
 const go = (direction: boolean) => {
   if (direction && current_page_index.value < pages.length - 1) {
     current_page_index.value += 1;
@@ -931,6 +995,16 @@ const go = (direction: boolean) => {
     current_page_index.value -= 1;
   }
 };
+
+/**
+ * Validate the proposition according to the current action and highlight the first missing field.
+ *
+ * Side effects:
+ * - Opens an error modal with the first missing requirement.
+ * - Navigates the wizard to the page that contains that requirement.
+ *
+ * @returns True when validation passes; false otherwise.
+ */
 const checkAndWarn = () => {
   const missing_information = course_proposition.check(action.value);
   const information_keys = Object.keys(
@@ -950,11 +1024,22 @@ const checkAndWarn = () => {
 
   return outcome;
 };
+
+/**
+ * Validate the current proposition and, if valid, ask for confirmation.
+ */
 const checkAndConfirm = () => {
   if (checkAndWarn()) {
     setupModalAndOpen("confirm");
   }
 };
+
+/**
+ * Send the proposition to the backend.
+ *
+ * On success, image uploads are performed (if any) and a success modal is shown.
+ * On failure, an error modal is shown (including a specific message for duplicates).
+ */
 const propose = () => {
   executeLink(
     "/v1/propositions",
@@ -984,6 +1069,12 @@ const propose = () => {
     course_proposition.toProposition()
   );
 };
+
+/**
+ * Close either the Ionic alert or the (currently disabled) additions modal.
+ *
+ * @param alert When true closes the alert; otherwise closes the additions modal.
+ */
 const closeModal = (alert: boolean) => {
   if (alert) {
     alert_open.value = false;
@@ -991,6 +1082,14 @@ const closeModal = (alert: boolean) => {
     addition.value = false;
   }
 };
+
+/**
+ * Configure the alert payload (title/message/buttons/inputs) and open it.
+ *
+ * @param window The kind of alert to show.
+ * @param message Optional custom message.
+ * @param approval When provided, turns the confirm window into approve/reject confirmation.
+ */
 const setupModalAndOpen = async (
   window: AvailableModal,
   message?: string,
@@ -1042,19 +1141,33 @@ const setupModalAndOpen = async (
   }
   alert_open.value = true;
 };
+
+/**
+ * Helper to configure the alert as an error window.
+ */
 const setAlertError = (message: string | undefined) => {
   alert_information.title = getCurrentElement("error");
   alert_information.message = message ?? getCurrentElement("general_error");
   alert_information.buttons = [getCurrentElement("ok")];
 };
+
+/**
+ * Best-effort localized title getter for objects that expose a `${language}_title` property.
+ */
 const getTitle = (obj: any) =>
   `${language}_title` in obj ? obj[`${language}_title`] : undefined;
+
 const learningContextToString = (learning_context: LearningContext) =>
   learning_context[`${language}_title`];
 const studyAddressToString = (study_address: StudyAddress) =>
   study_address[`${language}_title`];
 const teacherToString = (teacher: Teacher) =>
   teacher.name + " " + teacher.surname;
+
+/**
+ * Narrow unknown objects to the proposition sub-shapes expected by the template bindings.
+ * These casts are used to keep template code readable without changing runtime behavior.
+ */
 const castToTitles = (titles: any) => titles as PropositionTitles;
 const castToCharacteristics1 = (characteristics: any) =>
   characteristics as PropositionCharacteristics1;
@@ -1070,6 +1183,15 @@ const castToActivities = (activities: any) =>
   activities as PropositionActivities;
 const castToSpecificInformation = (specific_information: any) =>
   specific_information as PropositionSpecificInformation;
+
+/**
+ * Add a Teaching/GrowthArea to the proposition lists and render its card.
+ *
+ * @param type Which list to update.
+ * @param id Optional element id; defaults to the currently selected id.
+ * @param only_card When true, only updates the UI cards (does not mutate proposition payload).
+ * @param change_support_list When true, moves the element between available/selected lists.
+ */
 const addToSimpleList = (
   type: SimpleListTypes,
   id?: string | number,
@@ -1134,6 +1256,15 @@ const addToSimpleList = (
     trigger.value++;
   }
 };
+
+/**
+ * Add an access rule to the proposition (learning context + study address + year).
+ *
+ * @param learning_context_id Optional learning context id; defaults to the currently selected one.
+ * @param access_object Optional explicit payload source (used when rebuilding cards from existing data).
+ * @param only_card When true, only updates the UI cards (does not mutate proposition payload).
+ * @param change_support_list When true, moves the element between available/selected lists.
+ */
 const addAccess = (
   learning_context_id?: string,
   access_object?: AccessObject,
@@ -1305,6 +1436,14 @@ const addAccess = (
   }
   trigger.value++;
 };
+
+/**
+ * Add a teacher proposition (teacher + main flag + sections) and render its card.
+ *
+ * @param proposition_teacher Optional payload used when rebuilding cards from existing data.
+ * @param only_card When true, only updates the UI cards (does not mutate proposition payload).
+ * @param change_support_list When true, moves the teacher between available/selected lists.
+ */
 const addTeacher = (
   proposition_teacher?: PropositionTeacher,
   only_card = false,
@@ -1368,6 +1507,11 @@ const addTeacher = (
   }
   trigger.value++;
 };
+
+/**
+ * Generic "add" dispatcher used by template buttons.
+ * Routes to the correct add helper depending on the current cards list type.
+ */
 const addElement = (type: CardsListTypes) => {
   switch (type) {
     case "teachings":
@@ -1384,6 +1528,11 @@ const addElement = (type: CardsListTypes) => {
       break;
   }
 };
+
+/**
+ * Remove a selected teaching or growth area.
+ * The element id is provided through the shared Vuex event payload.
+ */
 const removeSimpleElement = (type: SimpleListTypes) => {
   let reference: SimpleList<Teaching | GrowthArea>;
   let cards_reference: OrderedCardsList<GeneralCardElements>;
@@ -1420,6 +1569,11 @@ const removeSimpleElement = (type: SimpleListTypes) => {
   reference.available.sort((a, b) => (a.id == b.id ? 0 : a.id > b.id ? 1 : -1));
   reference.selected.splice(tmp_index, 1);
 };
+
+/**
+ * Remove an element from one of the proposition card lists (teachings, growth areas, access rules, teachers).
+ * Uses Vuex event payload data to identify which element to remove.
+ */
 const removeElement = (type: CardsListTypes) => {
   let learning_context_id: string;
   let study_address_id: string;
@@ -1544,6 +1698,13 @@ const removeElement = (type: CardsListTypes) => {
   }
   trigger.value++;
 };
+
+/**
+ * Load an existing course proposition from the backend (admin info) and populate local state.
+ *
+ * When a valid course id is provided, initializes `course_proposition`, approval flags, images,
+ * and optionally project-class information for the selected learning session.
+ */
 const edit_course_proposition = async (course_id?: number) => {
   let course: Course;
   let learning_area: LearningArea;
@@ -1636,6 +1797,13 @@ const edit_course_proposition = async (course_id?: number) => {
   }
   trigger.value++;
 };
+
+/**
+ * Rebuild all cards lists (teachings/growth/access/teachers) from the current proposition payload.
+ *
+ * The optional `lists_info` object can clear cards/support lists and control whether the rebuild
+ * should only update cards and/or move elements between available/selected lists.
+ */
 const fillCardsLists = (lists_info: {
   [key in keyof string as PropositionListsKeys]?: {
     clear?: {
@@ -1737,6 +1905,13 @@ const fillCardsLists = (lists_info: {
     }
   }
 };
+
+/**
+ * Switch between proposition modalities (view/edit).
+ *
+ * When leaving edit mode, validates and persists changes before switching to view.
+ * Cards lists are rebuilt according to approval status.
+ */
 const changeModality = (new_action: PropositionActions) => {
   const tmp_lists_info = {
     clear: {
@@ -1823,6 +1998,12 @@ const changeModality = (new_action: PropositionActions) => {
   }
   trigger.value++;
 };
+
+/**
+ * Admin-only approval/rejection action for a proposition (and optionally its project class).
+ *
+ * @param outcome True to approve, false to reject.
+ */
 const approve = (outcome = true) => {
   if (course_proposition.specific_information.session_id != -1) {
     executeLink(
@@ -1860,10 +2041,22 @@ const approve = (outcome = true) => {
     }, 300);
   }
 };
+
+/**
+ * @returns True when both the course and the project class are approved.
+ */
 const allApproed = () => approved.course && approved.project_class;
+
+/**
+ * Handle Ionic reorder events for images.
+ */
 const moveImage = (event: CustomEvent) => {
   event.detail.complete(images_list.value);
 };
+
+/**
+ * Remove one image from the list based on the Vuex event payload and refresh the carousel.
+ */
 const removeImage = () => {
   const image_index = images_list.value.findIndex(
     (a) => a.name == store.state.event.data.name
@@ -1874,6 +2067,13 @@ const removeImage = () => {
     carousel_trigger.value++;
   }
 };
+
+/**
+ * Upload pending images (if any) and return a message to be shown in the UI.
+ *
+ * Resolves with `successful_message` when upload succeeded or there is nothing to upload.
+ * Rejects with a composed error message when upload fails.
+ */
 const uploadImagesMessages = async (
   refer_course_id: number | undefined,
   successful_message: string
@@ -1902,6 +2102,11 @@ const uploadImagesMessages = async (
         )
   );
 };
+
+/**
+ * Build a reorder-list row label for an image.
+ * When `disabled` is false, includes a remove icon that triggers the corresponding event.
+ */
 const getReorderLabel = (index: number, name: string, disabled: boolean) => {
   const to_ret: CustomElement = {
     id: "image_" + index,
@@ -1931,6 +2136,10 @@ const getReorderLabel = (index: number, name: string, disabled: boolean) => {
 
   return to_ret;
 };
+
+/**
+ * Cast a value to an array when the type system cannot infer it from runtime data.
+ */
 const castAsArray = (e: any) => e as Array<any>;
 /*const parameters_remaining = computed(
   () => course_proposition.remaining.length == 0

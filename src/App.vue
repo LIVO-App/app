@@ -58,6 +58,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * App root component.
+ *
+ * Responsibilities:
+ * - Renders the main Ionic layout (SplitPane + Menu + RouterOutlet).
+ * - Builds the side menu dynamically based on `User.type`.
+ * - Keeps the selected menu item in sync with the current route.
+ *
+ * Architecture notes:
+ * - The menu (items/order/default_item/index) lives in the store (`store.state.menu`).
+ * - The selection is persisted in `sessionStorage` (`selected_item`).
+ */
+
 import {
   IonApp,
   IonContent,
@@ -84,6 +97,11 @@ import {
   getIcon,
 } from "./utils";
 
+/**
+ * Returns the ordered list of visible menu entries for the current user.
+ * The order is derived from `order` (computed), which applies any
+ * `additional_controls` defined in the menu entries.
+ */
 const getMenu = () => {
   const complete_menu: MenuItem[] = [];
 
@@ -93,10 +111,24 @@ const getMenu = () => {
 
   return complete_menu;
 };
+
+/**
+ * Selects a menu entry and persists the selection.
+ * @param index index in the current order (`order`).
+ */
 const selectTitle = (index: number) => {
   store.state.menu.index = index;
   sessionStorage.setItem("selected_item", order.value[index]);
 };
+
+/**
+ * Aligns menu selection to the current route.
+ *
+ * Main rules:
+ * - If the route belongs to the previously selected entry, keep the selection.
+ * - Otherwise, find the menu entry that contains the route in its `url_names`.
+ * - If nothing matches, fall back to the default item for the user's type.
+ */
 const changeTitle = () => {
   const items_titles = Object.keys(menu.items);
   const selected_item = sessionStorage.getItem("selected_item");
@@ -147,9 +179,18 @@ const menu: Menu = store.state.menu;
 
 const image = computed(() => require("./assets/Logo_LIVO_Path.png"));
 const trigger = ref(0);
+
+/**
+ * Logged-in user (from the store or local persistence via `User.getLoggedUser()`).
+ */
 const user: ComputedRef<User | undefined> = computed(
   () => store.state.user ?? User.getLoggedUser()
 );
+
+/**
+ * Current menu order for the user's type.
+ * Applies `executeAdditionalControl` to filter conditional items (e.g. tutor).
+ */
 const order = computed(() =>
   user.value != undefined
     ? menu.order[user.value.type].filter((a) =>

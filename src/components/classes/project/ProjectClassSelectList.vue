@@ -1,4 +1,5 @@
 <template>
+  <!-- Global alert used for success/error feedback (export and generic actions) -->
   <ion-alert
     :is-open="alert_open"
     :header="alert_information.title"
@@ -6,6 +7,8 @@
     :buttons="alert_information.buttons"
     @didDismiss="closeModal('success')"
   />
+
+  <!-- Modal: course details (opened from a proposition/course card event) -->
   <ion-modal
     :is-open="description_open"
     @didDismiss="closeModal('course_details')"
@@ -24,10 +27,13 @@
       </template>
     </suspense>
   </ion-modal>
+
+  <!-- Two-column picker: left chooses a learning session, right shows courses/propositions for that selection -->
   <ion-grid
     ><!-- v-if="learning_sessions.loaded">-->
     <ion-row v-if="$route.name != 'open_day_courses'">
       <ion-col>
+        <!-- Export button: downloads a CSV of non-confirmed propositions (not shown in open-day flow) -->
         <ionic-element
           :element="
             getCustomMessage(
@@ -51,6 +57,7 @@
     </ion-row>
     <ion-row>
       <ion-col size="12" size-md="6">
+        <!-- Left list: available learning sessions grouped by school year -->
         <list-card
           :title="
             getCustomMessage('title', getCurrentElement('learning_sessions'))
@@ -78,6 +85,7 @@
         />
       </ion-col>
       <ion-col size="12" size-md="6">
+        <!-- Right selector: proposition type (or learning context in open-day courses flow) -->
         <custom-select
           v-model:selected_option="selected_option"
           :list="options"
@@ -106,6 +114,8 @@
           "
           :getCompleteName="(option: any) => option.title"
         />
+
+        <!-- Right list: propositions/courses for the selected learning session and option -->
         <list-card
           :key="trigger"
           :emptiness_message="
@@ -147,6 +157,18 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ProjectClassSelectList
+ * @description
+ * Selection screen for choosing a **learning session** and then browsing related
+ * propositions/classes.
+ *
+ * It supports:
+ * - navigating the available learning sessions,
+ * - listing propositions grouped by status,
+ * - optionally showing course details in a modal,
+ * - exporting non-confirmed data for reporting.
+ */
 import {
   GeneralCardElements,
   OrderedCardsList,
@@ -181,9 +203,21 @@ type Indexes = {
 
 type AvailableModal = "course_details" | "success" | "error";
 
+/**
+ * Returns true when no learning session is currently selected.
+ *
+ * This drives the empty-state message of the right list.
+ */
 const is_nothing_selected = () =>
   selected_element_indexes.group == "-1" &&
   selected_element_indexes.index == -1;
+
+/**
+ * Finds the indexes for an element inside an `OrderedCardsList`.
+ *
+ * If `id` is provided, it searches by id; otherwise it searches for the element
+ * marked as `selected`.
+ */
 const find_element = (
   list: OrderedCardsList<GeneralCardElements>,
   id?: string
@@ -211,6 +245,15 @@ const find_element = (
     index: index,
   };
 };
+
+/**
+ * Handles selection changes on the left learning sessions list.
+ *
+ * - Clicking the already selected session unselects it and resets the right side.
+ * - Selecting a different session loads the appropriate right-side data:
+ *   - open-day flow: learning contexts + tutor courses
+ *   - propositions flow: propositions grouped by status
+ */
 const changeSelection = async () => {
   let group_changed: boolean;
 
@@ -310,6 +353,10 @@ const changeSelection = async () => {
     }
   }
 };
+
+/**
+ * Toggles the `selected` state for the active learning session card.
+ */
 const selectedChange = (
   list: OrderedCardsList<GeneralCardElements>,
   group = selected_element_indexes.group,
@@ -319,6 +366,12 @@ const selectedChange = (
   list.cards[group][index].selected = value;
   trigger.value++;
 };
+
+/**
+ * Loads propositions for the currently selected learning session and option.
+ *
+ * Result is grouped into `approved` and `to_approve`.
+ */
 const getPropositions = async () => {
   const session_propositions: CourseModel[] = await (selected_option.value ==
   "project_classes"
@@ -378,6 +431,12 @@ const getPropositions = async () => {
 
   return cards;
 };
+
+/**
+ * Loads tutor courses for the selected learning session and learning context.
+ *
+ * Result is grouped by learning area.
+ */
 const getCourses = async () => {
   const tutor_courses: CourseBase[] = await executeLink(
     "/v1/teachers/" +
@@ -417,6 +476,13 @@ const getCourses = async () => {
 
   return ordered_cards;
 };
+
+/**
+ * Opens the requested modal/alert.
+ *
+ * - `course_details` opens the course description modal.
+ * - `success` / `error` open the global alert.
+ */
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
@@ -440,6 +506,10 @@ const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
       break;
   }
 };
+
+/**
+ * Closes the requested modal/alert.
+ */
 const closeModal = (window: AvailableModal) => {
   switch (window) {
     case "course_details":
@@ -451,6 +521,12 @@ const closeModal = (window: AvailableModal) => {
       break;
   }
 };
+
+/**
+ * Exports non-confirmed propositions into a CSV file.
+ *
+ * Uses `downloadCsv` and shows a feedback alert based on the export outcome.
+ */
 const exportPropositions = () => {
   executeLink(
     undefined,
@@ -612,6 +688,7 @@ for (const year of school_years) {
 await Promise.all(promises);
 
 watch(selected_option, async (new_option) => {
+  // When the right selector changes, refresh right-side data for the active session.
   if (new_option != undefined && new_option != "") {
     if (
       selected_element_indexes.group != "-1" &&

@@ -1,4 +1,5 @@
 <template>
+  <!-- Modal header: title + close button + (optional) mode segment -->
   <ion-header>
     <ion-toolbar>
       <ion-grid>
@@ -7,6 +8,7 @@
             <ionic-element :element="elements.title" />
           </ion-col>
           <ion-col size="auto">
+            <!-- Close action is delegated to the parent component -->
             <ionic-element
               :element="elements.close"
               @signal_event="$emit('close')"
@@ -14,6 +16,8 @@
           </ion-col>
         </ion-row>
       </ion-grid>
+
+      <!-- Segment toggle: available only when `learning_session_id` is provided -->
       <ion-segment
         v-if="course != undefined && learning_session_id != undefined"
         value="course"
@@ -36,6 +40,7 @@
     <div class="ion-padding">
       <template v-if="course != undefined">
         <template v-if="mode == 'course'">
+          <!-- Course view: access targets / audience -->
           <list-card
             :emptiness_message="
               getCustomMessage(
@@ -72,9 +77,13 @@
             }"
           />
           <hr style="border-top: 1px solid var(--ion-color-black)" />
+
+          <!-- Course view: image gallery -->
           <div class="ion-padding-bottom">
             <image-carousel :images="course.images_list" />
           </div>
+
+          <!-- Course view: description + details (rendered from `course_card`) -->
           <b
             ><ionic-element
               :element="
@@ -89,6 +98,8 @@
             :key="element.id"
             :element="element"
           />
+
+          <!-- Course view: teachings list -->
           <b
             ><ionic-element
               :element="
@@ -139,6 +150,8 @@
               },
             }"
           />
+
+          <!-- Course view: growth areas list -->
           <b
             ><ionic-element
               :element="
@@ -191,6 +204,7 @@
           />
         </template>
         <template v-else>
+          <!-- Project class view: class info + teachers list -->
           <template v-if="project_class_card != undefined">
             <ionic-element
               v-for="element in project_class_card.content"
@@ -198,6 +212,8 @@
               :element="element"
             />
           </template>
+
+          <!-- Project class view: teachers assigned to the class -->
           <b
             ><ionic-element
               :element="
@@ -251,6 +267,7 @@
         </template>
       </template>
       <template v-else>
+        <!-- Fallback: course fetch failed / course not found -->
         <ionic-element :element="elements.course_information_not_found" />
       </template>
     </div>
@@ -258,6 +275,20 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CourseDescription
+ * @description
+ * Modal component that shows detailed course information (description, teachings, growth areas, images).
+ * When `learning_session_id` is provided, it also allows switching to a “project class” view via a segment.
+ *
+ * @prop {string} title - Modal title.
+ * @prop {number} course_id - Course identifier used to load course data.
+ * @prop {string} [learning_session_id] - When present, enables the project-class segment.
+ * @prop {string} [section] - Optional section identifier used when resolving project-class data.
+ *
+ * @event close - Emitted when the user closes the modal.
+ */
+
 import {
   AdminProjectClass,
   Course,
@@ -289,9 +320,16 @@ import {
 import "swiper/css";
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
+/**
+ * Handles the segment switch between "course" and "project_class" views.
+ */
 const changeMode = (event: CustomEvent) => {
   mode.value = event.detail.value;
 };
+
+/**
+ * Keeps the responsive layout in sync with the current window width.
+ */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
 };
@@ -353,6 +391,7 @@ if (course != null) {
   course_card = course.toCard();
 }
 if (props.learning_session_id != undefined) {
+  // When `learning_session_id` exists, load project class details and teacher list.
   project_class_card = await executeLink(
     "/v1/project_classes/" + course.id + "/" + props.learning_session_id,
     async (response) => {
@@ -362,6 +401,7 @@ if (props.learning_session_id != undefined) {
       let actual_section: string | undefined;
 
       if (user.type == "student") {
+        // For students, attempt to infer the actual section if not provided via props.
         actual_section =
           props.section ??
           (await executeLink(
@@ -373,6 +413,7 @@ if (props.learning_session_id != undefined) {
               let count = 0;
               let tmp_section: string;
 
+              // Scan the student's project classes until the matching course is found.
               while (
                 (tmp_section =
                   response.data.data[count].id == course.id
@@ -405,6 +446,7 @@ if (props.learning_session_id != undefined) {
       props.learning_session_id +
       "/teachers",
     (response) => {
+      // Convert the (teacher, section) rows into teacher cards grouped by teacher id.
       const summmary_teachers: {
         [id: string]: {
           teacher: TeacherSummary;

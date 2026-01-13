@@ -1,4 +1,5 @@
 <template>
+  <!-- Empty state: display message when no data is available -->
   <div
     v-if="hasNoData(data_ref)"
     :class="{
@@ -14,11 +15,13 @@
     />
   </div>
   <template v-else>
+    <!-- Desktop/tablet layout: render as table grid -->
     <div
       v-if="!isSmaller(breakpoint, list_breakpoint)"
       class="ion-margin white_background"
     >
       <ion-grid class="ion-padding">
+        <!-- Table header row (first_row) -->
         <ion-row
           v-if="first_row_ref != undefined"
           class="header ion-text-center ion-align-items-center"
@@ -50,6 +53,7 @@
             />
           </ion-col>
         </ion-row>
+        <!-- Data rows: iterate over ordered card groups -->
         <template
           v-for="row_order in data_ref.cards[''] != undefined
             ? [
@@ -60,6 +64,7 @@
               ]
             : data_ref.order"
         >
+          <!-- Section divider (if enabled) -->
           <ion-row
             :key="row_order.key + '_divider'"
             v-if="data_ref.cards[''] == undefined && show_table_dividers"
@@ -74,11 +79,13 @@
               />
             </ion-col>
           </ion-row>
+          <!-- Individual data row -->
           <ion-row
             v-for="(row, i) in data_ref.cards[row_order.key]"
             :key="row_order.key + '_' + row.id"
             class="row ion-align-items-center"
           >
+            <!-- First column cell (header cell for row) -->
             <ion-col
               v-if="first_col_ref != undefined"
               :size-xl="
@@ -135,6 +142,7 @@
                 @signal_event="$emit('signal_event')"
               />
             </ion-col>
+            <!-- Data cells: iterate over flattened layout indexes -->
             <ion-col
               v-for="(index, j) in getFlatLayoutIndexes(
                 data_ref.cards[row_order.key][i],
@@ -177,6 +185,7 @@
         </template>
       </ion-grid>
     </div>
+    <!-- Mobile layout: render as ListCard for smaller screens -->
     <list-card
       v-if="isSmaller(breakpoint, list_breakpoint)"
       :key="trigger"
@@ -191,6 +200,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName IonicTable
+ * @description
+ * Tabular renderer for an `OrderedCardsList` of `GeneralTableCardElements`.
+ * Uses breakpoints to choose between a table (desktop) and `ListCard` (mobile).
+ */
+
 import {
   Breakpoint,
   CardsGridElements,
@@ -234,7 +250,13 @@ import {
   watch,
 } from "vue";
 
+// --- Type casting helper ---
 const castTableElementArray = (e: any) => e as TableElement[];
+
+/**
+ * Check if any cell in first_col has custom size defined.
+ * @returns true if at least one cell has a size property
+ */
 const hasFirstColSizes = () => {
   let keys: string[];
   let count = 0;
@@ -252,9 +274,18 @@ const hasFirstColSizes = () => {
 
   return has_sizes;
 };
+
+/**
+ * Check if data needs v-model watchers (if any element is editable).
+ * @returns true if titles or cards content can use v-model
+ */
 const checkVModel = () =>
   props.data.order.find((order_element) => canVModel(order_element.title)) !=
     undefined || canCardListVModel(props.data.cards);
+
+/**
+ * Set up watchers to sync data_ref with props.data (for v-model).
+ */
 const addListeners = () => {
   watch(
     () => props.data,
@@ -269,6 +300,14 @@ const addListeners = () => {
     }
   );
 };
+
+/**
+ * Get flat array of content indexes based on layout and breakpoint.
+ * Handles both linear and matrix layouts.
+ * @param element - The table card element with content and layout
+ * @param breakpoint - Current responsive breakpoint
+ * @returns Array of content indexes to render
+ */
 const getFlatLayoutIndexes = (
   element: GeneralTableCardElements,
   breakpoint: Breakpoint
@@ -294,10 +333,25 @@ const getFlatLayoutIndexes = (
 
   return to_ret;
 };
+
+/**
+ * Update the current breakpoint and force ListCard re-render.
+ * Called on window resize.
+ */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
   trigger.value++; // <!-- TODO (5): da vedere se si trova metodo migliore,cresponsivo e condiviso (es. breakpoint aggiornato in store o computed in App.vue)
 };
+
+/**
+ * Check if a table cell should be centered based on its classes.
+ * Returns true if no text-start or text-end class is active.
+ * @param key - Row group key
+ * @param i - Row index within group
+ * @param index - Cell index within row
+ * @param actual_breakpoint - Current responsive breakpoint
+ * @returns true if cell should be centered
+ */
 const isCellCentered = (
   key: string | number,
   i: number,
@@ -391,6 +445,7 @@ const lines_color = getCssColor(
 
 let stopWatch: WatchStopHandle;
 
+// --- Color adjustments for emptiness message ---
 if (emptiness_message_ref.value.colors == undefined) {
   emptiness_message_ref.value.colors = {};
 }
@@ -399,6 +454,7 @@ emptiness_message_ref.value.colors.text = adjustColor(
   props.colors?.text
 );
 
+// --- Color adjustments for first_row cells ---
 if (first_row_ref.value != undefined) {
   first_row_ref.value.forEach((cell) => {
     if (cell.colors == undefined) {

@@ -55,6 +55,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ImageCarousel
+ * @description
+ * Slider to display multiple images (URL, `File`, or `ImageDescriptor`).
+ * If `show_name` is true, also shows the name (or a fallback) above the image.
+ */
+
 import { Swiper, SwiperSlide } from "swiper/vue";
 import { Navigation, Autoplay } from "swiper/modules";
 import { ImageDescriptor } from "@/types";

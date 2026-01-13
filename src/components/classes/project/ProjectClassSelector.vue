@@ -1,4 +1,5 @@
 <template>
+  <!-- Modal header: title + close button -->
   <ion-header>
     <ion-toolbar>
       <ion-grid>
@@ -9,6 +10,7 @@
             />
           </ion-col>
           <ion-col size="auto">
+            <!-- Close action is delegated to the parent component -->
             <ionic-element
               :element="elements.close"
               @signal_event="$emit('close')"
@@ -22,6 +24,7 @@
     <ion-grid>
       <ion-row>
         <ion-col>
+          <!-- Current project class summary (only available when an origin class exists) -->
           <template v-if="project_class_card != undefined">
             <ionic-element
               :element="
@@ -34,6 +37,7 @@
               "
             />
             <div>
+              <!-- Learning context + learning area of the origin class -->
               <ionic-element
                 :element="
                   getCustomMessage(
@@ -64,6 +68,7 @@
                 "
               />
             </div>
+            <!-- Project class details rendered from the card content -->
             <div
               :key="element.id"
               v-for="element in project_class_card.content"
@@ -71,6 +76,7 @@
               <ionic-element :element="element" />
             </div>
             <div>
+              <!-- Credits of the origin course (if available) -->
               <ionic-element
                 :element="
                   getCustomMessage(
@@ -99,6 +105,7 @@
       <ion-row class="">
         <ion-col>
           <hr style="border-top: 1px solid var(--ion-color-black)" />
+          <!-- Constraints overview (remaining credits + group constraints) -->
           <ionic-element
             :element="
               getCustomMessage(
@@ -113,6 +120,7 @@
       </ion-row>
       <ion-row>
         <ion-col>
+          <!-- Remaining credits breakdown (rendered as HTML list) -->
           <ionic-element
             :element="
               getCustomMessage(
@@ -126,6 +134,7 @@
           <div v-html="credits_list"></div>
         </ion-col>
         <ion-col>
+            <!-- Remaining group slots breakdown (rendered as HTML list) -->
           <ionic-element
             :element="
               getCustomMessage(
@@ -142,6 +151,7 @@
       <ion-row>
         <ion-col>
           <hr style="border-top: 1px solid var(--ion-color-black)" />
+          <!-- Destination selection (learning context + learning area) -->
           <ionic-element
             :element="
               getCustomMessage(
@@ -162,6 +172,7 @@
       </ion-row>
       <ion-row>
         <ion-col size="auto">
+          <!-- First selector: learning context -->
           <custom-select
             v-model:selected_option="selected_context"
             :list="learning_contexts"
@@ -172,6 +183,7 @@
           />
         </ion-col>
         <ion-col size="auto">
+          <!-- Second selector: learning area (depends on the selected context) -->
           <custom-select
             v-model:selected_option="selected_area"
             :list="learning_areas_structures.distribution[selected_context]"
@@ -186,6 +198,7 @@
         <ion-col :key="trigger">
           <div>
             <!-- TODO (4): aggiungere visualizzazione personalizzata per tutor -->
+            <!-- Courses table: subscriptions manager filtered by selected context/area -->
             <ionic-table
               :key="trigger"
               :emptiness_message="
@@ -205,6 +218,7 @@
               :first_row="first_row"
               :sizes="column_sizes"
               @signal_event="
+                // When moving a student, store the origin class so the parent can submit a move payload.
                 if (
                   subscriptions_manager.mode == SubscriptionsManagerMode.MOVE &&
                   project_class != undefined
@@ -225,6 +239,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ProjectClassSelector
+ * @description
+ * Modal-like selector used to choose a destination **project class** (and related
+ * enrollment choices) for a student.
+ *
+ * It visualizes the selected class, learning contexts/areas, remaining credits and
+ * course groups using `SubscriptionsManager`, and emits events to drive the parent
+ * workflow (e.g. confirmation, close, errors).
+ */
 import {
   ProjectClassSummary,
   Colors,
@@ -267,6 +291,12 @@ import {
 import { PropType, Ref, ref, watch } from "vue";
 import { useStore } from "vuex";
 
+/**
+ * Returns the localized title for a learning area option.
+ *
+ * The option can come from a distribution list, so we resolve it against the
+ * canonical `learning_areas_structures.list` when possible.
+ */
 const getCorrectName = (option: LearningArea) => {
   const language = getCurrentLanguage();
 
@@ -278,6 +308,13 @@ const getCorrectName = (option: LearningArea) => {
     ? tmp_learning_area[`${language}_title`]
     : "";
 };
+
+/**
+ * Builds an HTML string describing remaining credits.
+ *
+ * Rendering is done via `v-html`, so this returns markup rather than a Vue tree.
+ * The output uses inline color styling to match the current `colors` palette.
+ */
 const getCreditsList = () => {
   //<!-- TODO (7): Vedere se unire con getSessionList
   let list = "";
@@ -330,6 +367,13 @@ const getCreditsList = () => {
 
   return list;
 };
+
+/**
+ * Builds an HTML string describing remaining group constraints.
+ *
+ * Depending on whether the context has global credits or per-area credits,
+ * the list is either flat (by group) or nested (area -> group).
+ */
 const getGroupsList = () => {
   let list = "";
   let group_remaining_courses: TmpList<number>;
@@ -393,6 +437,13 @@ const getGroupsList = () => {
 
   return list;
 };
+
+/**
+ * Updates the learning-area select placeholder based on the selected context.
+ *
+ * If the context has no areas available, the placeholder becomes an explicit
+ * "no learning areas" message.
+ */
 const updateLearningAreaPlaceholder = (context_id: string) => {
   placeholder =
     learning_areas_structures.distribution[context_id].length > 0
@@ -516,6 +567,7 @@ let confirmed_courses = false;
 let placeholder = getCurrentElement("no_learning_areas");
 
 if (props.project_class != undefined || props.learning_session != undefined) {
+  // Resolve the active learning session (either from project_class or direct prop).
   actual_learning_session =
     props.project_class != undefined
       ? props.project_class.learning_session
@@ -547,6 +599,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
     learning_contexts.length > 0 &&
     learning_areas_structures.list.length > 0
   ) {
+    // Configure table columns: optional section column + action column.
     if (store.state.sections_use) {
       first_row.push({
         id: "section",
@@ -582,6 +635,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
     );
 
     if (tmp_courses.length > 0) {
+      // Load all subscription constraints and render the initial filtered courses list.
       await props.subscriptions_manager.loadParameters(
         student,
         props.ordinary_class,
@@ -624,6 +678,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
 
       updateLearningAreaPlaceholder(selected_context.value);
       watch(selected_area, async (new_area) => {
+        // Area change only updates the visible courses list.
         props.subscriptions_manager.showCourses(
           selected_context.value,
           new_area,
@@ -646,6 +701,7 @@ if (props.project_class != undefined || props.learning_session != undefined) {
     }
   }
   watch(selected_context, async (new_context) => {
+    // Context change updates placeholder, resets area, then refreshes visible courses.
     updateLearningAreaPlaceholder(new_context);
     selected_area.value =
       learning_areas_structures.distribution[new_context].length > 0

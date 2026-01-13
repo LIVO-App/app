@@ -1,5 +1,6 @@
 <template>
   <div class="ion-padding-horizontal">
+    <!-- Global alert used for confirmations, errors and success messages -->
     <ion-alert
       :is-open="alert_open"
       :header="alert_information.title"
@@ -7,6 +8,8 @@
       :buttons="alert_information.buttons"
       @didDismiss="closeModal(store.state.event.event)"
     />
+
+    <!-- Modal: single-student grades manager (view/add/edit/remove) -->
     <ion-modal
       id="grades_manager"
       :is-open="grades_open"
@@ -27,6 +30,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Modal: bulk/multiple grades insertion (same grade schema for many students) -->
     <ion-modal
       id="multiple_grades_manager"
       :is-open="multiple_grades_open"
@@ -46,6 +51,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Modal: course details (read-only description) -->
     <ion-modal
       :is-open="description_open"
       @didDismiss="closeModal('course_details')"
@@ -65,6 +72,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Modal: move a student to another project class/section (admin flow) -->
     <ion-modal
       id="student_mover"
       :is-open="student_mover_open"
@@ -89,6 +98,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Header area: title, navigation/actions, section selector -->
     <div class="ion-margin-top ion-margin-start">
       <div class="ion-margin-bottom ion-margin-start">
         <ionic-element
@@ -107,6 +118,8 @@
           "
         />
       </div>
+
+      <!-- Quick actions: announcements navigation + open course details modal -->
       <ionic-element
         v-for="button in buttons.slice(0, 2)"
         :key="button.id"
@@ -114,6 +127,8 @@
         @signal_event="setupModalAndOpen()"
         @execute_link="$router.push(store.state.request.url)"
       />
+
+      <!-- Teacher-only action: bulk grade insertion (disabled for associated teachers / when finals are complete) -->
       <ionic-element
         v-if="
           user.type == 'teacher' &&
@@ -125,6 +140,8 @@
         :element="buttons[2]"
         @signal_event="manageEvent()"
       />
+
+      <!-- Admin-only: final confirmation banner + confirm button (only for upcoming sessions) -->
       <div
         v-if="
           user.type == 'admin' &&
@@ -172,6 +189,7 @@
           </ion-button>
         </template>
         <template v-else>
+          <!-- Admin-only: show the confirmation date once the class has been confirmed -->
           <ionic-element
             :element="
               getCustomMessage(
@@ -194,6 +212,8 @@
           />
         </template>
       </div>
+
+      <!-- Optional section selector (only when sections are enabled in the store) -->
       <custom-select
         v-if="sections_use"
         v-model:selected_option="selected_section"
@@ -211,6 +231,8 @@
         }"
       />
     </div>
+
+    <!-- Main students table (current/active project class roster) -->
     <suspense>
       <template #default>
         <div class="ion-padding-top">
@@ -234,6 +256,8 @@
         <loading-component />
       </template>
     </suspense>
+
+    <!-- Pending students table (only when showPending evaluates to true) -->
     <template v-if="showPending">
       <suspense>
         <template #default>
@@ -276,6 +300,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ProjectClass
+ * @description
+ * Screen-level component that displays and manages a **project class**.
+ *
+ * It orchestrates:
+ * - students and pending students tables,
+ * - grade insertion/edit/removal (single and multiple),
+ * - course detail inspection,
+ * - student move flows via `SubscriptionsManager`.
+ *
+ * The component mainly coordinates modal/alert state and backend requests.
+ */
 import {
   AlertInformation,
   CustomElement,
@@ -331,6 +368,13 @@ type AvailableModal =
   | "success"
   | "error";
 
+/**
+ * Central modal/alert dispatcher.
+ *
+ * Reads the target window and any extra data from the global store event and opens:
+ * - a modal (grades manager, multiple grades, course details, student mover), or
+ * - a confirmation/feedback alert (edit/remove grade, move/remove student, final confirmation).
+ */
 const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
   const actual_window: AvailableModal = window ?? store.state.event.event;
   const actual_message: string = message ?? store.state.event.data?.message;
@@ -470,6 +514,12 @@ const setupModalAndOpen = (window?: AvailableModal, message?: string) => {
       break;
   }
 };
+
+/**
+ * Closes the requested modal/alert.
+ *
+ * `ion-alert` calls this by passing the last event key when dismissed.
+ */
 const closeModal = (window: AvailableModal) => {
   switch (window) {
     case "grades":
@@ -496,6 +546,12 @@ const closeModal = (window: AvailableModal) => {
       break;
   }
 };
+
+/**
+ * Creates a single grade for a single student (teacher flow).
+ *
+ * Input data is read from `store.state.event.data` (emitted by the grades manager).
+ */
 const add_grade = async () => {
   const data = store.state.event.data;
 
@@ -531,6 +587,11 @@ const add_grade = async () => {
   );
 };
 
+/**
+ * Creates grades in bulk for multiple students (teacher flow).
+ *
+ * Used by the "register grades series" UI.
+ */
 const add_grades = () => {
   const data = store.state.event.data;
 
@@ -581,6 +642,14 @@ const add_grades = () => {
   );
 };
 
+/**
+ * Reloads the students roster and (for teachers) their grades.
+ *
+ * Also adapts table columns depending on:
+ * - role (teacher/admin),
+ * - whether the class is confirmed,
+ * - learning session status.
+ */
 const updateStudents = async () => {
   students =
     selected_section.value != ""
@@ -679,6 +748,11 @@ const updateStudents = async () => {
   }
 };
 
+/**
+ * Loads students that are still "pending" for this project class.
+ *
+ * This table is only shown for admins during the future/upcoming phases.
+ */
 const updatePendingStudents = async () => {
   pending_students = await executeLink(
     "/v1/project_classes/" + course_id + "/" + session_id + "/components",
@@ -707,6 +781,13 @@ const updatePendingStudents = async () => {
     );
   }
 };
+
+/**
+ * Handles bubbled events from nested components.
+ *
+ * Some events map to backend operations (add grade(s)); everything else is
+ * treated as a request to open the appropriate modal/alert.
+ */
 const manageEvent = () => {
   switch (store.state.event.event) {
     case "add_grade":
@@ -720,6 +801,16 @@ const manageEvent = () => {
       break;
   }
 };
+
+/**
+ * Global "Yes" handler for confirm alerts.
+ *
+ * Based on `store.state.event.event`, this performs the corresponding mutation:
+ * - final confirmation,
+ * - remove/edit grade,
+ * - remove student,
+ * - move student.
+ */
 const yes_handler = async () => {
   let body: {
       [key in keyof GradeProps]?: any;
@@ -1042,6 +1133,10 @@ const yes_handler = async () => {
       break;
   }
 };
+
+/**
+ * Locates the grade referenced by the last event (by id) and populates `grade_index`.
+ */
 const findGrade = () => {
   let count = 0;
 
@@ -1052,6 +1147,12 @@ const findGrade = () => {
     ++count < Object.keys(grades).length
   );
 };
+
+/**
+ * Locates the student referenced by the last event (by student_id) in both:
+ * - the rendered table (row index)
+ * - the backing student list
+ */
 const findStudent = () => {
   const table = is_pending
     ? pending_table_data.cards[""]
@@ -1062,6 +1163,13 @@ const findStudent = () => {
   student_index.table = table.findIndex((a) => a.id == tmp_student_id);
   student_index.student_list = list.findIndex((a) => a.id == tmp_student_id);
 };
+
+/**
+ * Updates the UI references for the final grade.
+ *
+ * When a final grade is added/edited/removed, the table cells linked to
+ * `final_grade` are updated to match the current final grade value.
+ */
 const updateFinalRefs = (
   student_id: string,
   grade: Grade,
@@ -1100,6 +1208,13 @@ const updateFinalRefs = (
     students_trigger.value++;
   }
 };
+
+/**
+ * Moves a student from the current project class to a different one.
+ *
+ * This delegates eligibility checks to `SubscriptionsManager` and performs the
+ * backend request when the move is allowed.
+ */
 const moveStudent = async (
   subscriptions_manager: SubscriptionsManager,
   origin_project_class: AdminProjectClass
@@ -1185,6 +1300,12 @@ const moveStudent = async (
 
   return outcome;
 };
+
+/**
+ * Recomputes visible index values after removing rows.
+ *
+ * This keeps the index column (1..N) consistent with the current table order.
+ */
 const fix_indexes = () => {
   const table = is_pending
     ? pending_table_data.cards[""]
@@ -1206,10 +1327,16 @@ const fix_indexes = () => {
   }
 };
 
+/**
+ * Returns true when every student currently loaded has a final grade.
+ */
 const areAllFinals = () => {
   return Object.keys(final_grades_indexes).length == Object.keys(grades).length;
 };
 
+/**
+ * Marks whether the current event refers to the pending list, then opens the target modal.
+ */
 const setUpPendingAndOpen = (value = false) => {
   is_pending = value;
   setupModalAndOpen();

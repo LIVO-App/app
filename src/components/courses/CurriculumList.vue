@@ -1,6 +1,7 @@
 <template>
   <!-- TODO (5): sistemare questione bocciature sul singolo corso utilizzando il sistema dei collegamenti ad albero/id_corso tra corsi: associare ad ogni corso un corso collegato (automatio tramite modello o manuale), o definire come originale, per poter raggruppare varie versioni di uno stesso corso e considerarle come lo stesso, in modo tale che si possa implementare un sistema per capire se uno studente ha partecipato a quel determinato corso (o ad una delle sue varianti) -->
   <div class="ion-padding-horizontal">
+    <!-- Modal: grades viewer for the selected course (read-only in this screen). -->
     <ion-modal
       id="grades_manager"
       :is-open="grades_open"
@@ -19,6 +20,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Modal: course details (CourseDescription). -->
     <ion-modal
       :is-open="description_open"
       @didDismiss="closeModal('course_details')"
@@ -38,6 +41,8 @@
         </template>
       </suspense>
     </ion-modal>
+
+    <!-- Credits progression summary for the selected learning context (and optionally per-area). -->
     <div class="ion-padding-horizontal">
       <ionic-element
         :element="
@@ -91,6 +96,8 @@
         </template>
       </div>
     </div>
+
+    <!-- Filters: school year and learning context. -->
     <ion-grid>
       <ion-row>
         <ion-col size="auto">
@@ -114,6 +121,8 @@
         </ion-col>
       </ion-row>
     </ion-grid>
+
+    <!-- Curriculum table: emits events used to open modals (grades / course details). -->
     <suspense>
       <template #default>
         <ionic-table
@@ -145,6 +154,17 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CurriculumList
+ * @description
+ * Student curriculum/progression table.
+ * Shows credits progression and a course table (via `IonicTable`), and can open:
+ * - `GradesManager` to view grades for a selected course.
+ * - `CourseDescription` to show course details.
+ *
+ * @prop {string} [student_id] - Optional student id (used by non-student roles); defaults to the logged user.
+ */
+
 import {
   CurriculumCourse,
   CustomElement,
@@ -179,6 +199,10 @@ import { useStore } from "vuex";
 
 type availableModal = "grades" | "course_details";
 
+/**
+ * Open the correct modal based on the current Vuex event type.
+ * The event payload provides the needed parameters (title, course id, session id, etc.).
+ */
 const SetupModalAndOpen = () => {
   const window: availableModal = store.state.event.event;
   switch (window) {
@@ -198,6 +222,10 @@ const SetupModalAndOpen = () => {
       break;
   }
 };
+
+/**
+ * Close a specific modal.
+ */
 const closeModal = (window: availableModal) => {
   switch (window) {
     case "grades":
@@ -207,8 +235,17 @@ const closeModal = (window: availableModal) => {
       description_open.value = false;
   }
 };
+
+/**
+ * Convert a learning context to its localized label (used by the selector).
+ */
 const getContextAcronym = (option: LearningContext) =>
   option[`${language}_title`];
+
+/**
+ * Fetch and group curriculum courses for the selected school year.
+ * Populates `year_courses` and updates `courses` for the current selected context.
+ */
 const getYearCourses = async () => {
   year_courses = {};
 
@@ -233,6 +270,13 @@ const getYearCourses = async () => {
 
   courses = year_courses[selected_context.value] ?? [];
 };
+
+/**
+ * Fetch learning-session correspondences for the current year courses.
+ *
+ * This is used to build the curriculum table rows with the latest session id
+ * associated to each course.
+ */
 const updateCorrespondences = async () => {
   await getYearCourses();
 
@@ -266,6 +310,13 @@ const updateCorrespondences = async () => {
     }
   );
 };
+
+/**
+ * Fill the table cards list from the current course list.
+ *
+ * @param year_correspondences Map course_id -> [session_ids]
+ * @param courses Courses to render.
+ */
 const updateTable = (
   year_correspondences: any,
   courses: CurriculumCourse[]
@@ -283,12 +334,26 @@ const updateTable = (
     }
   }
 };
+
+/**
+ * Get a localized title for a learning area id.
+ */
 const getAreaTitle = (key: string) => {
   const tmp_area = learning_areas.find((a) => a.id == key);
   return tmp_area != undefined ? tmp_area[`${language}_title`] : "";
 };
+
+/**
+ * Cast the progression value to a simple string array.
+ * Used when the progression is aggregated at context level.
+ */
 const castToStringArray = (obj: TmpList<string[]> | string[]) =>
   obj as string[];
+
+/**
+ * Cast the progression value to a per-area map.
+ * Used when the progression is split by learning area.
+ */
 const castToTmpList = (obj: TmpList<string[]> | string[]) =>
   obj as TmpList<string[]>;
 
@@ -425,12 +490,16 @@ await executeLink(
 
 await updateCorrespondences();
 updateTable(year_correspondences, courses);
+
+// Refresh the whole table when changing school year.
 watch(selected_year, async () => {
   await updateCorrespondences();
   table_data.cards[""] = [];
   updateTable(year_correspondences, courses);
   trigger.value++;
 });
+
+// Filter table rows by learning context.
 watch(selected_context, (n) => {
   courses = year_courses[n] ?? [];
   table_data.cards[""] = [];

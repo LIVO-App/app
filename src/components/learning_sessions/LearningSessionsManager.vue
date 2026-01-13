@@ -1,4 +1,5 @@
 <template>
+  <!-- Global alert modal used for confirm/cancel flows and backend outcomes. -->
   <ion-alert
     :is-open="alert_open"
     :header="alert_information.title"
@@ -8,12 +9,14 @@
     :inputs="alert_information.inputs"
   />
   <div class="ion-padding-horizontal">
+    <!-- Top bar: school-year selector and (in view mode) a quick-add school-year input. -->
     <ion-grid
       class="ion-padding-end"
       style="border-bottom: 1px solid var(--ion-color-medium)"
     >
       <ion-row class="ion-align-items-center">
         <ion-col size="12" size-xl="6">
+          <!-- School year currently in focus (drives the table content). -->
           <custom-select
             :key="year_trigger + 'school_year_choice'"
             v-model:selected_option="selected_school_year"
@@ -26,6 +29,7 @@
           />
         </ion-col>
         <template v-if="action == 'view'">
+          <!-- New school-year proposal: input + add action (only when not editing/proposing). -->
           <ion-col size="7" size-xl="4">
             <ionic-element
               :key="year_trigger"
@@ -41,6 +45,7 @@
         </template>
       </ion-row>
     </ion-grid>
+
     <div class="ion-margin">
       <ionic-element
         :element="
@@ -52,6 +57,13 @@
         "
       />
     </div>
+
+    <!-- Action bar:
+         - view: edit toggle (only for current/future years)
+         - edit: confirm edits
+         - propose: send proposal
+         - edit/propose: cancel + add session
+    -->
     <div class="flex ion-margin">
       <template v-if="learning_sessions_data.cards[''].length">
         <ionic-element
@@ -75,12 +87,15 @@
           class="flex ion-margin-horizontal ion-align-self-stretch"
           style="border-left: 1px solid var(--ion-color-medium)"
         ></span>
+        <!-- Adds a new session row with suggested dates based on the last session. -->
         <ionic-element
           :element="elements['add_learning_session']"
           @signal_event="addLearningSession"
         />
       </template>
     </div>
+
+    <!-- Main table: editable list of sessions for the selected school year. -->
     <div class="ion-margin-top ion-margin-horizontal">
       <ionic-table
         :key="trigger"
@@ -100,6 +115,16 @@
 </template>
 
 <script lang="ts" setup>
+/**
+ * @displayName LearningSessionsManager
+ * @description
+ * Admin tool to propose/edit learning sessions per school year.
+ * Renders sessions as an editable table (via `IonicTable`) with confirm/cancel flows.
+ *
+ * Actions are handled through alerts and backend calls (`executeLink`) depending on the current modality
+ * (`view` / `edit` / `propose`).
+ */
+
 import {
   AlertInformation,
   CustomElement,
@@ -125,6 +150,12 @@ import { useStore } from "vuex";
 
 type availableModal = "confirm" | "cancel_confirm" | "success" | "error";
 
+/**
+ * Adds a new school year to the selector and switches to "propose" mode.
+ *
+ * This flow is available only while in `view` mode. The new year is kept in a
+ * temporary state (marked "to confirm") until the proposal is submitted.
+ */
 const addSchoolYear = () => {
   const newYear = parseInt(elements["school_year_to_add"].content as string);
   if (
@@ -144,6 +175,13 @@ const addSchoolYear = () => {
     alert_open.value = true;
   }
 };
+
+/**
+ * Appends a new learning session row, using defaults derived from the last
+ * existing session (either from the previous year or from the current table).
+ *
+ * The new session uses a temporary negative id until persisted by the backend.
+ */
 const addLearningSession = () => {
   let new_tmp_id = -1,
     converted_cards: LearningSessionCreateProps[],
@@ -219,6 +257,12 @@ const addLearningSession = () => {
 
   trigger.value++;
 };
+
+/**
+ * Formats school years for the select component.
+ *
+ * If the year is the one currently being proposed, it gets a "to confirm" tag.
+ */
 const schoolYearSelector = (school_year: { id: number }) => {
   return school_year.id == new_year_to_create.value
     ? getCompleteSchoolYear(school_year.id) +
@@ -227,6 +271,12 @@ const schoolYearSelector = (school_year: { id: number }) => {
         ")"
     : "" + getCompleteSchoolYear(school_year.id);
 };
+
+/**
+ * Prepares and opens a confirmation/cancellation alert.
+ *
+ * The actual handler depends on the current `action` (propose vs edit).
+ */
 const setupModalAndOpen = async (window?: availableModal) => {
   const actual_window: availableModal = window || store.state.event.event;
 
@@ -266,25 +316,48 @@ const setupModalAndOpen = async (window?: availableModal) => {
   }
   alert_open.value = true;
 };
+
+/** Closes the currently open alert. */
 const closeModal = () => {
   alert_open.value = false;
 };
+
+/**
+ * Configures the global alert as an error or warning.
+ *
+ * This component uses the same alert instance for many flows, so this helper
+ * centralizes title/message/buttons.
+ */
 const setAlertError = (message: string | undefined, is_warning = false) => {
   alert_information.title = getCurrentElement(is_warning ? "warning" : "error");
   alert_information.message = message ?? getCurrentElement("general_error");
   alert_information.buttons = [getCurrentElement("ok")];
 };
+
+/**
+ * Rebuilds the table cards for the given school year from in-memory sessions.
+ *
+ * This is called when switching year and when changing modality.
+ */
 const updateLearningSessions = (school_year: number) => {
   learning_sessions_data.cards[""] = [];
   for (const element of learning_sessions[school_year] || []) {
     learning_sessions_data.cards[""].push(element.toTableCard(action.value));
   }
 };
+
+/**
+ * Switches component modality (view/edit/propose) and refreshes the table.
+ */
 const changeModality = async (new_action: PropositionActions) => {
   action.value = new_action;
   updateLearningSessions(selected_school_year.value);
   trigger.value++;
 };
+
+/**
+ * In view mode, enters edit mode. In edit mode, asks for confirmation to save.
+ */
 const editOrConfirmEdits = (action: PropositionActions) => {
   if (action == "view") {
     changeModality("edit");
@@ -293,6 +366,16 @@ const editOrConfirmEdits = (action: PropositionActions) => {
     setupModalAndOpen("confirm");
   }
 };
+
+/**
+ * Sends changes to the backend.
+ *
+ * - propose: sends all sessions as creations
+ * - edit: updates changed rows and creates newly appended rows
+ *
+ * Returns the outcome and (when creating) the id mapping needed to update
+ * temporary ids in memory.
+ */
 const sendEdits = async (
   action: PropositionActions,
   changes_made: boolean[]
@@ -451,6 +534,13 @@ const sendEdits = async (
     new_ids: new_ids,
   };
 };
+
+/**
+ * Applies backend-confirmed changes locally.
+ *
+ * This updates the in-memory `learning_sessions` objects from the table cards,
+ * assigns new ids for newly created sessions, and refreshes `original_sessions`.
+ */
 const applyChanges = (new_ids: { from_idx: number; first_id: number }) => {
   let ls_card: GeneralTableCardElements, new_id: number;
 
@@ -478,6 +568,11 @@ const applyChanges = (new_ids: { from_idx: number; first_id: number }) => {
     );
   }
 };
+
+/**
+ * Validates the table rows (ordering, date constraints, group count) and, if
+ * needed, sends updates/creates to the backend.
+ */
 const checkAndSendEdits = async (action: PropositionActions) => {
   const changes_made: boolean[] = [];
   let last_end_date: Date | null = null,
@@ -570,6 +665,13 @@ const checkAndSendEdits = async (action: PropositionActions) => {
     }, 300);
   }
 };
+
+/**
+ * Discards pending edits.
+ *
+ * - propose: removes the newly added school year and its sessions
+ * - edit: restores sessions from `original_sessions`
+ */
 const cancelEdits = (action: PropositionActions) => {
   if (action == "propose") {
     delete learning_sessions[new_year_to_create.value];
@@ -729,6 +831,7 @@ await executeLink("/v1/learning_sessions/school_years", (response) => {
 watch(
   selected_school_year,
   (new_school_year, old_school_year) => {
+    // When switching year: snapshot the original data (for cancel) and rebuild the table.
     if (new_school_year != -1) {
       original_sessions = learning_sessions[new_school_year].map((ls) =>
         LearningSession.copy(ls)

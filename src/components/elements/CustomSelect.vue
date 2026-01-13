@@ -46,6 +46,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName CustomSelect
+ * @description
+ * `ion-select` wrapper with a label and an options list.
+ * Used for consistent selections across breakpoints and project styling.
+ */
+
 import {
   Classes,
   /*Colors, GeneralSubElements,*/ SelectSubElements,

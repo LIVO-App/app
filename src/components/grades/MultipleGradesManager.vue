@@ -1,4 +1,5 @@
 <template>
+  <!-- Hidden datetime modal used by the IonDatetimeButton (shared picker for publication date). -->
   <ion-modal :keep-contents-mounted="true">
     <ion-datetime
       :key="trigger"
@@ -13,6 +14,8 @@
       :value="date_value"
     />
   </ion-modal>
+
+  <!-- Generic alert modal (currently used for warning flows). -->
   <ion-alert
     :is-open="alert_open"
     :header="alert_information.title"
@@ -20,6 +23,8 @@
     :buttons="alert_information.buttons"
     @didDismiss="closeModal(store.state.event.event)"
   />
+
+  <!-- Modal header: title + close action. -->
   <ion-header>
     <ion-toolbar>
       <ion-grid>
@@ -37,9 +42,12 @@
       </ion-grid>
     </ion-toolbar>
   </ion-header>
+
+  <!-- Main content: shared metadata (description/date/final flag) + per-student grades table. -->
   <ion-content>
     <div class="ion-padding-bottom">
       <div class="ion-padding-bottom">
+        <!-- Intro / form title message. -->
         <ionic-element
           :element="
             getCustomMessage(
@@ -52,6 +60,7 @@
         />
       </div>
       <div>
+        <!-- Shared description message (shown above the multi-language textareas). -->
         <ionic-element
           :element="
             getCustomMessage(
@@ -63,6 +72,7 @@
           "
         />
         <!-- TODO (5): mettere EditorWrapper -->
+        <!-- Multi-language shared description: stored in `descriptions` as <language>_description keys. -->
         <ion-textarea
           v-for="language in languages"
           :key="language"
@@ -79,6 +89,7 @@
         style="border-bottom: 1px solid var(--ion-color-medium)"
       />
       <div>
+        <!-- Publication date selector (IonDatetimeButton opens the hidden IonDatetime modal above). -->
         <ion-item style="width: fit-content" lines="none">
           <ion-label
             :aria-label="getCurrentElement('date')"
@@ -93,6 +104,8 @@
             class="ion-padding-start"
           />
         </ion-item>
+
+        <!-- Toggle that marks the inserted grades as final (logic for hiding already-final grades is currently commented out). -->
         <div style="width: fit-content">
           <ion-label
             position="floating"
@@ -108,6 +121,9 @@
           />
         </div>
       </div>
+
+      <!-- Students table: one row per student with one or more linked grade inputs. -->
+      <!-- When the user types a grade in one field, the handler validates input and mirrors it to linked grade fields. -->
       <ionic-table
         :key="trigger"
         :emptiness_message="
@@ -155,6 +171,8 @@
 
       <!-- TODO (4): mettere popup "Sei sicuro?" -->
     </div>
+
+    <!-- Submit button: validates inputs, builds the Vuex event payload, and notifies the parent to send the API request. -->
     <div class="ion-text-center">
       <ion-button
         @click="
@@ -185,7 +203,7 @@
                   ...parameters,
                   ...descriptions,
                   publication_date:
-                    date != undefined ? date.toISOString() : undefined,
+                    date != undefined ? (date as Date).toISOString() : undefined,
                   grades_list: actual_grades,
                   final: final,
                 },
@@ -206,6 +224,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName MultipleGradesManager
+ * @description
+ * Modal component that supports **bulk grade insertion** for multiple students.
+ *
+ * It loads the current project-class students, lets the user enter a shared
+ * description (multi-language), publication date, and final-grade flag, and then
+ * validates and emits the event used by the parent component to submit the grades.
+ */
 import {
   CustomElement,
   Language,
@@ -253,6 +280,13 @@ import { useStore } from "vuex";
 
 type AvailableModal = "warning";
 
+/**
+ * Updates the internal publication date based on the IonDatetime value.
+ *
+ * The picker can emit either a string ISO date or null/undefined. This handler
+ * normalizes the value to a `Date` (or `undefined`) and enforces the `end_of_day`
+ * upper bound used by the picker.
+ */
 const changeData = (event: DatetimeCustomEvent) => {
   const tmp_str_date = event.target.value;
 
@@ -270,6 +304,14 @@ const changeData = (event: DatetimeCustomEvent) => {
   }
   date_trigger.value++;
 };
+
+/**
+ * Loads the students for the current project-class component and builds the
+ * editable table cards.
+ *
+ * Students that already have a final grade (tracked by `final_grades_indexes`)
+ * are skipped.
+ */
 const updateStudents = async () => {
   students = await executeLink(
     "/v1/project_classes/" +

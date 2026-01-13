@@ -43,6 +43,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName SessionDescription
+ * @description
+ * Compact session “header/details” card loaded from the backend.
+ * Used as a context summary in screens that need to show the selected learning session.
+ *
+ * @prop {string} id - Learning session id.
+ * @prop {LearningContextSummary} [learning_context] - Optional context used to enrich the rendered card.
+ */
+
 import {
   GeneralCardElements,
   LearningSession,

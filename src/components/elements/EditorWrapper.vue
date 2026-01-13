@@ -9,6 +9,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName EditorWrapper
+ * @description
+ * Wrapper for the Quill rich-text editor used for HTML fields.
+ * Emits `update:value` with the generated HTML.
+ */
+
 import { Classes, EditorSubElements } from "@/types";
 import { getBreakpoint, getBreakpointClasses } from "@/utils";
 import { nextTick, onBeforeUnmount, onMounted, PropType, ref } from "vue";

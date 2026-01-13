@@ -26,8 +26,30 @@ import {
   toDateString,
 } from "./utils";
 
+/**
+ * Shared application types and models.
+ *
+ * Contains:
+ * - domain model (users, courses, sessions, classes, grades...)
+ * - data-driven UI schema (Card/Element/Link) used by generic renderers
+ * - support types for responsive layout and styling
+ */
+
+/**
+ * Supported UI/content languages used across the app.
+ *
+ * Note: the backend payloads often expose language-specific fields
+ * (e.g. `italian_title`, `english_title`).
+ */
 type Language = "italian" | "english";
 
+/**
+ * A single navigation entry.
+ *
+ * - `url_names`: per-user-type list of route names.
+ * - `icon_ref`: key used by `getIcon`.
+ * - `additional_controls`: optional runtime gates (visibility/enabled).
+ */
 type MenuItem = {
   url_names: {
     [key in keyof string as UserType]: string[];
@@ -38,6 +60,9 @@ type MenuItem = {
   };
 };
 
+/**
+ * Full menu definition with user-type specific ordering and defaults.
+ */
 type Menu = {
   items: {
     [key: string]: MenuItem;
@@ -51,16 +76,28 @@ type Menu = {
   index: number;
 };
 
+/**
+ * Generic key/value dictionary used for simple elements.
+ *
+ * Some structures would ideally be language-indexed, but are currently
+ * represented as a plain string map.
+ */
 type BaseElement = {
   [key: string]: string; // TODO (9): mettere [key in keyof string as Language]
 };
 
+/**
+ * Map of string resources split by `Language`.
+ */
 type ElementsList = {
   [key in keyof string as Language]: {
     [key: string]: string;
   };
 };
 
+/**
+ * API response wrapper used by the backend for linked resources.
+ */
 type ResponseItem<T> = {
   path: string;
   single: boolean;
@@ -70,12 +107,18 @@ type ResponseItem<T> = {
   data: T | T[];
 };
 
+/**
+ * Annual credits definition for a study year/address.
+ */
 type AnnualCredits = {
   study_year: number;
   study_address: string;
   definition_year: number;
 };
 
+/**
+ * Backend payload used to instantiate an `OrdinaryClassSummary`.
+ */
 type OrdinaryClassSummaryProps = {
   study_year: number;
   address: string;
@@ -83,12 +126,21 @@ type OrdinaryClassSummaryProps = {
   school_year?: number;
 };
 
+/**
+ * Compact representation of an ordinary class.
+ * Includes helpers for serialization and conversion to `GeneralCardElements`.
+ */
 class OrdinaryClassSummary {
   study_year: number;
   address: string;
   section?: string;
   school_year: number;
 
+  /**
+   * Creates a compact ordinary-class summary.
+   *
+   * When `school_year` is not provided, it defaults to the current school year.
+   */
   constructor(classObj: OrdinaryClassSummaryProps) {
     this.study_year = classObj.study_year;
     this.address = classObj.address;
@@ -96,6 +148,12 @@ class OrdinaryClassSummary {
     this.school_year = classObj.school_year ?? getCurrentSchoolYear();
   }
 
+  /**
+   * Builds a human-readable identifier for this class.
+   *
+   * @param section Whether to include the section suffix when sections are enabled.
+   * @param school_year Whether to append the school year.
+   */
   toString(section = true, school_year = false) {
     return (
       this.study_year +
@@ -106,6 +164,11 @@ class OrdinaryClassSummary {
     );
   }
 
+  /**
+   * Converts this summary to a selectable card.
+   *
+   * The generated link triggers the `change_selection` event with the computed id.
+   */
   toCard(
     section = true,
     school_year = false,
@@ -131,6 +194,11 @@ class OrdinaryClassSummary {
   }
 }
 
+/**
+ * Backend payload used to instantiate an `OrdinaryClass`.
+ *
+ * References (`*_ref`) follow the `ResponseItem<T>` shape.
+ */
 type OrdinaryClassProps = {
   annual_credits_ref?: ResponseItem<AnnualCredits>;
   english_displayed_name: string;
@@ -144,11 +212,22 @@ type OrdinaryClassProps = {
   }>;
 };
 
+/**
+ * Ordinary class model.
+ *
+ * Extends `OrdinaryClassSummary` with display names and annual credits.
+ */
 class OrdinaryClass extends OrdinaryClassSummary {
   annual_credits?: AnnualCredits;
   english_displayed_name?: string;
   italian_displayed_name?: string;
 
+  /**
+   * Creates a full ordinary-class model.
+   *
+   * The constructor normalizes backend references and fills in a default section
+   * when not explicitly provided.
+   */
   constructor(classObj: OrdinaryClassProps, section?: string) {
     super({
       study_year: (classObj.study_year_ref.data as { id: number }).id,
@@ -164,6 +243,9 @@ class OrdinaryClass extends OrdinaryClassSummary {
     this.italian_displayed_name = classObj.italian_displayed_name;
   }
 
+  /**
+   * Builds a summary-only representation of this class.
+   */
   toOrdinaryClassSummary(): OrdinaryClassSummary {
     return new OrdinaryClassSummary({
       study_year: this.study_year,
@@ -173,6 +255,13 @@ class OrdinaryClass extends OrdinaryClassSummary {
     });
   }
 
+  /**
+   * Builds a human-readable string representation.
+   *
+   * @param section Whether to include the section suffix when sections are enabled.
+   * @param school_year Whether to append the school year.
+   * @param divider Token used between parts (defaults to a blank space).
+   */
   toString(section = true, school_year = false, divider = " ") {
     return (
       this.study_year +
@@ -183,6 +272,12 @@ class OrdinaryClass extends OrdinaryClassSummary {
     );
   }
 
+  /**
+   * Converts this class to a card descriptor.
+   *
+   * When `path` is provided, the card emits a request link; otherwise it triggers
+   * the `change_selection` event.
+   */
   toCard(
     section = true,
     school_year = false,
@@ -243,9 +338,20 @@ class OrdinaryClass extends OrdinaryClassSummary {
   }
 }
 
+/**
+ * Enrollment state for a learning session.
+ * Encapsulates pending/enrolled logic and editability based on status.
+ */
 class Enrollment {
   private _enrollment: boolean | Date;
   private _editable: boolean;
+
+  /**
+   * Builds an enrollment state wrapper.
+   *
+   * - `pending`: can be `true`/`false` or a `Date` representing a pending status.
+   * - `editable`: depends on session status and `open_enrollment`.
+   */
   constructor(
     pending: boolean | Date,
     learning_session: LearningSession,
@@ -259,26 +365,54 @@ class Enrollment {
       learning_session.getStatus(reference) == LearningSessionStatus.FUTURE &&
       open_enrollment;
   }
+
+  /**
+   * Current enrollment value: `false`, `true`, or a pending `Date`.
+   */
   get enrollment(): Date | boolean {
     return this._enrollment;
   }
+
+  /**
+   * Updates the enrollment value, ignoring invalid dates.
+   */
   set enrollment(enrollment: Date | boolean) {
     if (!(enrollment instanceof Date && isNaN(enrollment.getTime()))) {
       this._enrollment = enrollment;
     } // TODO (9): pensare se mettere "else return false" (sfruttabile per perdita di dati)
   }
+
+  /**
+   * Whether the enrollment action can be performed in the current context.
+   */
   get editable(): boolean {
     return this._editable;
   }
+
+  /**
+   * Updates the editability flag.
+   */
   set editable(editable: boolean) {
     this._editable = editable;
   }
+
+  /**
+   * Returns true when enrollment is still pending (represented as a date).
+   */
   isPending(): boolean {
     return this.enrollment instanceof Date;
   }
+
+  /**
+   * Returns the HTTP method to use to change enrollment.
+   */
   getChangingMethod(): Method {
     return this.enrollment ? "delete" : "post";
   }
+
+  /**
+   * Builds the request icon descriptor for subscribe/unsubscribe actions.
+   */
   getEnrollmentIcon(path: string, method?: Method): RequestIcon {
     return {
       url: path,
@@ -288,6 +422,14 @@ class Enrollment {
       icon: this.enrollment === false ? getIcon("add") : getIcon("close"),
     };
   }
+
+  /**
+   * Returns theme colors describing the current enrollment state.
+   *
+   * - pending: neutral
+   * - enrolled: success
+   * - not enrolled: danger
+   */
   getStatusColors(): Colors<CustomSubElements> {
     return {
       text: {
@@ -306,6 +448,10 @@ class Enrollment {
         : undefined,
     };
   }
+
+  /**
+   * Returns colors for the subscribe/unsubscribe button based on the state.
+   */
   getChangeButtonColors(): Colors<CustomSubElements> {
     return {
       text:
@@ -331,6 +477,10 @@ class Enrollment {
           : undefined,
     };
   }
+
+  /**
+   * Human-readable label for UI.
+   */
   toString(): string {
     return this.isPending()
       ? getCurrentElement(
@@ -342,6 +492,12 @@ class Enrollment {
   }
 }
 
+/**
+ * Base properties shared by all card representations.
+ *
+ * Cards are rendered by generic components (e.g. list/grid/table cards)
+ * and can be styled via `colors` and `classes`.
+ */
 type CardElements = {
   id: string;
   group: any;
@@ -350,6 +506,9 @@ type CardElements = {
   hovered?: boolean;
 };
 
+/**
+ * Optional, high-level properties available on many card variants.
+ */
 type OptionalCardElements = {
   title?: CustomElement;
   subtitle?: CustomElement;
@@ -358,35 +517,56 @@ type OptionalCardElements = {
   link?: LinkParameters;
 };
 
+/**
+ * A single item used by responsive layouts.
+ */
 type LayoutElement = {
   id: string | number;
   size?: string | BreakpointVisibility<Breakpoint, string>;
 };
 
+/**
+ * Responsive layout definition, keyed by breakpoints.
+ */
 type Layout = BreakpointVisibility<
   Breakpoint,
   (string | number)[] | LayoutElement[][]
 >;
 
+/**
+ * Optional card body content.
+ */
 type OptionalContentCard = {
   content?: CustomElement[];
 };
 
+/**
+ * Optional layout and linking between card elements.
+ */
 type LinkedLayout = {
   layout?: Layout;
   linked_elements?: TmpList<(string | number)[]>;
 };
 
+/**
+ * Most common card shape used throughout the app.
+ */
 type GeneralCardElements = CardElements &
   OptionalCardElements &
   OptionalContentCard &
   LinkedLayout;
 
+/**
+ * Table-flavoured card shape: content is required.
+ */
 type GeneralTableCardElements = CardElements &
   OptionalCardElements &
   Required<OptionalContentCard> &
   LinkedLayout;
 
+/**
+ * Card used by enrollment/subscription screens.
+ */
 type EnrollmentCardElements = CardElements &
   Required<OptionalContentCard> &
   LinkedLayout & {
@@ -394,6 +574,9 @@ type EnrollmentCardElements = CardElements &
     enrollment: Enrollment;
   };
 
+/**
+ * High-level status of a learning session relative to the current date.
+ */
 enum LearningSessionStatus {
   FUTURE,
   UPCOMING,
@@ -401,6 +584,9 @@ enum LearningSessionStatus {
   COMPLETED,
 }
 
+/**
+ * Learning area (domain entity).
+ */
 type LearningArea = {
   id: string;
   credits?: number;
@@ -410,6 +596,10 @@ type LearningArea = {
   [key in keyof string as `${Language}_description`]: string | null;
 };
 
+/**
+ * Backend payload used to instantiate a `MinimizedCourse`.
+ * Used in many lists.
+ */
 type MinimumCourseProps = {
   id: number;
   section: string;
@@ -417,12 +607,18 @@ type MinimumCourseProps = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Client-side model for a minimal course.
+ */
 class MinimizedCourse implements MinimumCourseProps {
   id: number;
   section: string;
   italian_title: string;
   english_title: string;
 
+  /**
+   * Creates a minimal course model from the backend payload.
+   */
   constructor(course: MinimumCourseProps) {
     this.id = course.id;
     this.section = course.section;
@@ -430,6 +626,11 @@ class MinimizedCourse implements MinimumCourseProps {
     this.english_title = course.english_title;
   }
 
+  /**
+   * Converts this course to a generic card.
+   *
+   * If `path` is provided, the card will be clickable via a request link.
+   */
   toCard(path?: string): GeneralCardElements {
     const language = getCurrentLanguage();
     const card: GeneralCardElements = {
@@ -462,6 +663,10 @@ class MinimizedCourse implements MinimumCourseProps {
   }
 }
 
+/**
+ * Backend payload used to instantiate a `CourseBase`.
+ * Shared by multiple course representations.
+ */
 type CourseBaseProps = {
   id: number;
   credits: number;
@@ -472,16 +677,28 @@ type CourseBaseProps = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Backend payload used to instantiate a `CourseSummary`.
+ * Used in lists with grouping and optional section.
+ */
 type CourseSummaryProps = CourseBaseProps & {
   section?: string;
   group: number;
   final_confirmation: string | null;
 };
 
+/**
+ * Backend payload used to instantiate an `EnrollmentCourse`.
+ * Used for enrollment/subscription operations.
+ */
 type EnrollmentCourseProps = CourseSummaryProps & {
   pending: string;
 };
 
+/**
+ * Backend payload used to instantiate a `CurriculumCourse`.
+ * Used in a student's curriculum view.
+ */
 type CurriculumCourseProps = CourseBaseProps & {
   section: string;
   final_grade: GradeProps | null;
@@ -491,6 +708,10 @@ type CurriculumCourseProps = CourseBaseProps & {
   future_course: number;
 };
 
+/**
+ * Backend payload used to instantiate a `Course`.
+ * Used in course details and proposition-related screens.
+ */
 type CourseProps = CourseBaseProps & {
   creation_school_year: number;
   up_hours: number;
@@ -519,6 +740,9 @@ type CourseProps = CourseBaseProps & {
   [key in keyof string as `${Language}_description`]: string;
 };
 
+/**
+ * Base client-side course model.
+ */
 class CourseBase {
   id: number;
   credits: number;
@@ -526,6 +750,9 @@ class CourseBase {
   italian_title: string;
   english_title: string;
 
+  /**
+   * Builds the base course model and normalizes references.
+   */
   constructor(courseObj: CourseBaseProps) {
     this.id = courseObj.id;
     this.credits = courseObj.credits;
@@ -536,6 +763,9 @@ class CourseBase {
     this.english_title = courseObj.english_title;
   }
 
+  /**
+   * Builds a generic course card that triggers the `course_details` event.
+   */
   toCard() {
     const language = getCurrentLanguage();
     const card: GeneralCardElements = {
@@ -555,11 +785,18 @@ class CourseBase {
   }
 }
 
+/**
+ * Course model used in aggregated lists.
+ * Adds `group` and optional `section`, plus confirmation date.
+ */
 class CourseSummary extends CourseBase {
   section?: string | undefined;
   group: number;
   final_confirmation?: Date;
 
+  /**
+   * Builds a summarized course model used in grouped lists.
+   */
   constructor(courseObj: CourseSummaryProps) {
     super(courseObj);
     this.section = courseObj.section;
@@ -570,6 +807,9 @@ class CourseSummary extends CourseBase {
         : undefined;
   }
 
+  /**
+   * Extends the base card by adding group and optional section.
+   */
   toCard() {
     const card: GeneralCardElements = super.toCard();
 
@@ -585,9 +825,17 @@ class CourseSummary extends CourseBase {
   }
 }
 
+/**
+ * Course model used in enrollment/subscription screens.
+ *
+ * Adds `pending` (boolean/date) and builders to produce `EnrollmentCardElements`.
+ */
 class EnrollmentCourse extends CourseSummary {
   pending: boolean | Date;
 
+  /**
+   * Builds an enrollment course model converting the `pending` string.
+   */
   constructor(courseObj: EnrollmentCourseProps) {
     const tmp_pending_date = new Date(courseObj.pending);
     super(courseObj);
@@ -596,6 +844,9 @@ class EnrollmentCourse extends CourseSummary {
       : courseObj.pending === "true";
   }
 
+  /**
+   * Builds an `EnrollmentCardElements` descriptor for subscription flows.
+   */
   toEnrollmentCard(
     learning_session: LearningSession,
     path?: string,
@@ -836,12 +1087,20 @@ class EnrollmentCourse extends CourseSummary {
   }
 }
 
+/**
+ * Curriculum-specific course model.
+ *
+ * Used for grade entry and curriculum tables.
+ */
 class CurriculumCourse extends CourseBase {
   section: string;
   final_grade: GradeProps | null;
   learning_context_id: string;
   future_course: boolean;
 
+  /**
+   * Builds a curriculum course model.
+   */
   constructor(courseObj: CurriculumCourseProps) {
     super(courseObj);
     this.section = courseObj.section;
@@ -865,6 +1124,9 @@ class CurriculumCourse extends CourseBase {
         this.intermediate_grades = this.intermediate_grades.concat(grades);
     }*/
 
+  /**
+   * Builds a table row used in curriculum tables and grade entry.
+   */
   toTableCard(
     session_id: number,
     student_id: number,
@@ -1008,6 +1270,12 @@ class CurriculumCourse extends CourseBase {
   }
 }
 
+/**
+ * Full course domain model.
+ *
+ * Loads related entities (teachers/admins/learning contexts) and exposes helpers
+ * for rendering access/growth/teaching cards.
+ */
 class Course extends CourseBase {
   // TODO (6): "unire" con ModelProposition
 
@@ -1036,6 +1304,12 @@ class Course extends CourseBase {
     [key: string]: LearningContext;
   };
 
+  /**
+   * Builds the full course model from the backend payload.
+   *
+   * Related entities (teachings, growth areas, access constraints, images,
+   * learning contexts) are loaded via `loadParams()`.
+   */
   constructor(courseObj: CourseProps) {
     super(courseObj);
     this.creation_school_year = courseObj.creation_school_year;
@@ -1072,6 +1346,9 @@ class Course extends CourseBase {
     this.learning_contexts = {};
   }
 
+  /**
+   * Loads course-related entities used by UI sections.
+   */
   private async loadParams() {
     await executeLink(
       "/v1/courses/" + this.id + "/growth_areas",
@@ -1120,6 +1397,9 @@ class Course extends CourseBase {
     });
   }
 
+  /**
+   * Factory that fetches a course from `course_link` and loads related entities.
+   */
   static async newCourse(course_link: string) {
     const course = new Course(
       await executeLink(
@@ -1133,6 +1413,9 @@ class Course extends CourseBase {
     return course;
   }
 
+  /**
+   * Builds access constraint cards grouped by learning context.
+   */
   getAccessCardsList() {
     const language = getCurrentLanguage();
     const access_list: OrderedCardsList<GeneralCardElements> = {
@@ -1252,6 +1535,9 @@ class Course extends CourseBase {
     return access_list;
   }
 
+  /**
+   * Builds cards for growth areas (read-only, styled).
+   */
   getGrowthCardsList(): OrderedCardsList<GeneralCardElements> {
     let tmp_card: GeneralCardElements;
 
@@ -1289,6 +1575,9 @@ class Course extends CourseBase {
     };
   }
 
+  /**
+   * Builds cards for teachings (read-only, styled).
+   */
   getTeachingCardsList(): OrderedCardsList<GeneralCardElements> {
     let tmp_card: GeneralCardElements;
     return {
@@ -1325,6 +1614,9 @@ class Course extends CourseBase {
     };
   }
 
+  /**
+   * Builds the course details card, optionally showing extra fields for staff users.
+   */
   toCard(user?: User) {
     const language = getCurrentLanguage();
 
@@ -1468,6 +1760,9 @@ class Course extends CourseBase {
   }
 }
 
+/**
+ * Backend payload used to update a `LearningSession`.
+ */
 type LearningSessionUpdateProps = {
   start: string;
   end: string;
@@ -1475,20 +1770,32 @@ type LearningSessionUpdateProps = {
   open_day: string;
 };
 
+/**
+ * Backend payload used to create a `LearningSession`.
+ */
 type LearningSessionCreateProps = {
   number: number;
   school_year: number;
 } & LearningSessionUpdateProps;
 
+/**
+ * Backend payload used to instantiate a `LearningSession` (includes id).
+ */
 type LearningSessionProps = {
   id: number;
 } & LearningSessionCreateProps;
 
+/**
+ * Minimal learning session representation used in lists and references.
+ */
 class LearningSessionSummary {
   id: number;
   number: number;
   school_year: number;
 
+  /**
+   * Creates a minimal learning session summary.
+   */
   constructor(sessionObj: { id: number; number: number; school_year: number }) {
     this.id = sessionObj.id;
     this.number = sessionObj.number;
@@ -1496,6 +1803,14 @@ class LearningSessionSummary {
   }
 }
 
+/**
+ * Full learning session model.
+ *
+ * Provides:
+ * - status computation (`getStatus`) using `LearningSessionStatus`
+ * - conversion to cards and table cards
+ * - helpers to map table-card edits to backend create/update payloads
+ */
 class LearningSession extends LearningSessionSummary {
   // TODO (4): visualizzare numero-anno dove visualizzo solo ID
 
@@ -1527,6 +1842,9 @@ class LearningSession extends LearningSessionSummary {
     ...LearningSession.attributes_to_update_templates,
   }; // LearningSessionProps
 
+  /**
+   * Builds a full session model from backend payload.
+   */
   constructor(sessionObj: LearningSessionProps) {
     super(sessionObj);
 
@@ -1536,6 +1854,9 @@ class LearningSession extends LearningSessionSummary {
     this.open_day = new Date(sessionObj.open_day);
   }
 
+  /**
+   * Creates a deep copy as a backend-compatible payload round-trip.
+   */
   static copy(session: LearningSession) {
     return new LearningSession({
       id: session.id,
@@ -1548,6 +1869,9 @@ class LearningSession extends LearningSessionSummary {
     });
   }
 
+  /**
+   * Human-readable label like `"<number> - <school_year>"`.
+   */
   toString(full_school_year = false) {
     return (
       this.number +
@@ -1558,6 +1882,9 @@ class LearningSession extends LearningSessionSummary {
     );
   }
 
+  /**
+   * Static helper for formatting without instantiating methods.
+   */
   static toString(session: LearningSession, full_school_year = false) {
     return (
       session.number +
@@ -1568,6 +1895,9 @@ class LearningSession extends LearningSessionSummary {
     );
   }
 
+  /**
+   * Computes the session status relative to a reference date.
+   */
   getStatus(reference = new Date()) {
     // future [TDB] upcoming [SD] current [ED] completed
     const start_date = this.start;
@@ -1609,6 +1939,9 @@ class LearningSession extends LearningSessionSummary {
         return course_list;
     }*/
 
+  /**
+   * Builds an HTML list (by learning area) of subscribed courses and credits.
+   */
   async getSessionList(
     learning_context?: LearningContextSummary,
     reference = new Date(),
@@ -1708,6 +2041,9 @@ class LearningSession extends LearningSessionSummary {
     return session_list;
   }
 
+  /**
+   * Returns subscribed credits (and whether any course is present) for a context.
+   */
   async getSubscribedCredits(
     learning_context_id: string,
     user = User.getLoggedUser() as UserSummary
@@ -1734,6 +2070,9 @@ class LearningSession extends LearningSessionSummary {
     );
   }
 
+  /**
+   * Builds a session card descriptor for list pages.
+   */
   async toCard(
     selected?: boolean,
     learning_context?: LearningContextSummary,
@@ -1847,10 +2186,16 @@ class LearningSession extends LearningSessionSummary {
     return tmp_element;
   }
 
+  /**
+   * Returns the suffix used by responsive table element ids.
+   */
   static getBreakpointTableElement(breakpoint: Breakpoint | "") {
     return breakpoint != "" && isSmaller(breakpoint, "md") ? "_md" : "";
   }
 
+  /**
+   * Builds an editable/non-editable table row depending on the given mode.
+   */
   toTableCard(mode: PropositionActions): GeneralTableCardElements {
     const content: CustomElement[] =
       mode == "view"
@@ -2007,6 +2352,9 @@ class LearningSession extends LearningSessionSummary {
     };
   }
 
+  /**
+   * Normalizes backend update values (casts numbers and formats dates).
+   */
   static cleanBackendUpdateObject(backend_update_values: {
     [key: string]: any;
   }) {
@@ -2036,6 +2384,9 @@ class LearningSession extends LearningSessionSummary {
     }
   }
 
+  /**
+   * Normalizes a full backend object (including base properties).
+   */
   static cleanBackendObject(backend_values: { [key: string]: any }) {
     LearningSession.cleanBackendUpdateObject(backend_values);
     backend_values.number = parseInt(
@@ -2050,6 +2401,9 @@ class LearningSession extends LearningSessionSummary {
     );
   }
 
+  /**
+   * Builds the backend create payload from an edited table-card row.
+   */
   static getBackendCreateObject(
     table_card: GeneralTableCardElements,
     container_width: number
@@ -2066,6 +2420,9 @@ class LearningSession extends LearningSessionSummary {
     return backend_values;
   }
 
+  /**
+   * Builds the backend update payload from an edited table-card row.
+   */
   static getBackendUpdateObject(
     table_card: GeneralTableCardElements,
     container_width: number
@@ -2082,6 +2439,9 @@ class LearningSession extends LearningSessionSummary {
     return backend_update_values;
   }
 
+  /**
+   * Compares a backend update payload against this instance.
+   */
   equalToBackupUpdateObject(
     backend_object: LearningSessionUpdateProps
   ): boolean {
@@ -2098,6 +2458,9 @@ class LearningSession extends LearningSessionSummary {
     return true;
   }
 
+  /**
+   * Updates this instance based on the values extracted from a table-card row.
+   */
   updateFromTableCard(
     table_card: GeneralTableCardElements,
     container_width: number
@@ -2115,26 +2478,41 @@ class LearningSession extends LearningSessionSummary {
   }
 }
 
+/**
+ * Platform-specific icon names (Ionicons iOS/Material variants).
+ */
 type IconAlternatives = {
   ios: string;
   md: string;
 };
 
+/**
+ * Dictionary of icons addressed by a string key.
+ */
 type IconsList = {
   [key: string]: IconAlternatives;
 };
 
+/**
+ * Text + icon tuple, optionally marked as sortable (`order`).
+ */
 type StringIcon = {
   text: string;
   icon: IconAlternatives;
   order?: boolean;
 };
 
+/**
+ * HTTP link descriptor used by generic components.
+ */
 type RequestParameters = {
   url: string; // TODO (6): cambiare tipo in Url o RouteLocationRaw (o simile)
   method: Method;
 };
 
+/**
+ * Store/event-bus action descriptor used by generic components.
+ */
 type EventParameters = {
   event: string;
   data?: {
@@ -2142,34 +2520,60 @@ type EventParameters = {
   };
 };
 
+/**
+ * Union representing either an HTTP request or an internal event.
+ */
 type LinkParameters = RequestParameters | EventParameters;
 
+/**
+ * HTTP request + icon.
+ */
 type RequestIcon = RequestParameters & {
   icon: IconAlternatives;
 };
 
+/**
+ * Event + icon.
+ */
 type EventIcon = EventParameters & {
   icon: IconAlternatives;
 };
 
+/**
+ * HTTP request + text.
+ */
 type RequestString = RequestParameters & {
   text: string;
 };
 
+/**
+ * Event + text.
+ */
 type EventString = EventParameters & {
   text: string;
 };
 
+/**
+ * HTTP request rendered as text+icon.
+ * If `whole_link` is true, the whole element behaves as a link.
+ */
 type RequestStringIcon = {
   whole_link?: boolean;
 } & RequestParameters &
   StringIcon;
 
+/**
+ * Event rendered as text+icon.
+ * If `whole_link` is true, the whole element behaves as a link.
+ */
 type EventStringIcon = {
   whole_link?: boolean;
 } & EventParameters &
   StringIcon;
 
+/**
+ * Map of group key -> array of cards.
+ */
 type CardsList<T extends CardElements = CardElements> = TmpList<T[]>;
 /**
 type CardsList<T = CardElements> = {
@@ -2177,6 +2581,9 @@ type CardsList<T = CardElements> = {
 };
  */
 
+/**
+ * Cards grouped by an ordered list of section keys.
+ */
 type OrderedCardsList<T extends CardElements = CardElements> = {
   order: {
     key: string | number;
@@ -2185,6 +2592,9 @@ type OrderedCardsList<T extends CardElements = CardElements> = {
   cards: CardsList<T>;
 };
 
+/**
+ * Supported element renderers used by generic UI components.
+ */
 type ElementType =
   | "string"
   | "html"
@@ -2195,8 +2605,14 @@ type ElementType =
   | "checkbox"
   | "input_date";
 
+/**
+ * Identifies whether a `CustomElement` triggers a request or an event.
+ */
 type LinkType = "request" | "event";
 
+/**
+ * All content payload types supported by `CustomElement.content`.
+ */
 type ContentType =
   | string
   | number
@@ -2210,28 +2626,49 @@ type ContentType =
   | RequestStringIcon
   | EventStringIcon;
 
+/**
+ * Color source: CSS variable, Ionic text token, or direct hex.
+ */
 type ColorType = "var" | "text" | "hex";
 
+/**
+ * Color reference used by the theming helpers.
+ */
 type ColorObject = {
   name: string;
   alpha?: number;
   type: ColorType;
 };
 
+/**
+ * Theme sub-keys used for common components.
+ */
 type GeneralSubElements = "text" | "background" | "borders" | "hover";
 
+/**
+ * Theme sub-keys specific to Ionic input components.
+ */
 type IonInputSubElements = "placeholder";
 
+/**
+ * Theme sub-keys specific to Ionic checkbox components.
+ */
 type IonCheckboxSubElements =
   | "checkmark"
   | "background_checked"
   | "borders_checked";
 
+/**
+ * All theme sub-keys that can appear inside `CustomElement.colors`.
+ */
 type CustomSubElements =
   | GeneralSubElements
   | IonInputSubElements
   | IonCheckboxSubElements;
 
+/**
+ * Theme sub-keys used by card renderers (common + card-specific).
+ */
 type GeneralCardSubElements =
   | GeneralSubElements
   | "dividers_text"
@@ -2240,6 +2677,9 @@ type GeneralCardSubElements =
   | "list_borders"
   | "dividers";
 
+/**
+ * Sub-elements of a `CustomElement` that can receive classes.
+ */
 type SubElements =
   | "label"
   | "html"
@@ -2249,30 +2689,63 @@ type SubElements =
   | "input"
   | "checkbox";
 
+/**
+ * Sub-elements of a card container.
+ */
 type CardSubElements = "card" | "header" | "content";
 
+/**
+ * Sub-elements used by select inputs.
+ */
 type SelectSubElements = "select" | "option";
 
+/**
+ * Sub-elements used by rich text editors.
+ */
 type EditorSubElements = "editor";
 
+/**
+ * Common targets shared by list and grid card layouts.
+ */
 type CardsCommonElements = CardSubElements | "divider" | "item";
 
+/**
+ * Targets used by list card layouts.
+ */
 type CardsListElements = CardsCommonElements | "list";
 
+/**
+ * Targets used by grid card layouts.
+ */
 type CardsGridElements = CardsCommonElements | "grid" | "row" | "col";
 
+/**
+ * Breakpoints used for responsive rendering.
+ */
 type Breakpoint = "xs" | "sm" | "md" | "lg" | "xl";
 
+/**
+ * A breakpoint key that can include a generic fall-back scope.
+ */
 type BreakpointScope = Breakpoint | "general";
 
+/**
+ * Responsive value map keyed by breakpoints.
+ */
 type BreakpointVisibility<T extends Breakpoint | BreakpointScope, U> = {
   [key in keyof string as T]?: U;
 };
 
+/**
+ * Theme colors split by sub-element keys.
+ */
 type Colors<T extends CustomSubElements | GeneralCardSubElements> = {
   [key in keyof string as T]?: ColorObject;
 };
 
+/**
+ * Map of CSS class flags, optionally responsive.
+ */
 type Classes<
   T extends
     | SubElements
@@ -2289,6 +2762,12 @@ type Classes<
   };
 };
 
+/**
+ * Atomic piece of UI content rendered by generic components.
+ *
+ * It can optionally be styled (`colors`, `classes`) and made interactive
+ * (`linkType` + content being one of the link variants).
+ */
 type CustomElement = {
   // TODO (6): togliere type e usare funzioni is... per valutare tipo o tipi template CustomElement<T>
   id: string;
@@ -2301,16 +2780,26 @@ type CustomElement = {
   hovered?: boolean;
 };
 
+/**
+ * `CustomElement` with optional cell sizing rules used in tables.
+ */
 type TableElement = CustomElement & {
   size?: string | BreakpointVisibility<Breakpoint, string>;
 };
 
+/**
+ * Indicates whether a table element/field can be edited.
+ */
 enum EditableState {
   NOT_EDITABLE,
   EDITABLE,
   AFTER_7_DAYS,
 }
 
+/**
+ * Backend payload used to instantiate a `Grade`.
+ * Includes a publication date and multi-language description.
+ */
 type GradeProps = {
   id: number;
   publication: string;
@@ -2322,6 +2811,10 @@ type GradeProps = {
   [key: string]: any;
 };
 
+/**
+ * Client-side grade model.
+ * Provides editability rules and conversion to a table card.
+ */
 class Grade {
   [key: string]: any;
 
@@ -2332,6 +2825,9 @@ class Grade {
   english_description: string;
   final: boolean;
 
+  /**
+   * Builds a grade model converting backend strings to dates.
+   */
   constructor(props: GradeProps) {
     this.id = props.id;
     this.publication = new Date(props.publication);
@@ -2341,6 +2837,9 @@ class Grade {
     this.final = props.final == 1;
   }
 
+  /**
+   * Returns the editability status based on final-grade publication date.
+   */
   getEditableStatus(final_grade_pubblication?: Date) {
     const seven_days_after =
       final_grade_pubblication != undefined
@@ -2359,6 +2858,9 @@ class Grade {
       : EditableState.NOT_EDITABLE;
   }
 
+  /**
+   * Converts this grade to a `GeneralTableCardElements` row.
+   */
   toTableCard(
     associated_teacher?: boolean,
     teacher_id?: number,
@@ -2501,6 +3003,9 @@ class Grade {
     return row;
   }
 
+  /**
+   * Serializes this grade back to backend-compatible props.
+   */
   toProps(): GradeProps {
     return {
       id: this.id,
@@ -2513,6 +3018,9 @@ class Grade {
   }
 }
 
+/**
+ * Common request parameters used when navigating to grades screens.
+ */
 type GradesParameters = {
   course_id: number;
   session_id: number;
@@ -2520,16 +3028,25 @@ type GradesParameters = {
   associated_teacher?: boolean;
 };
 
+/**
+ * Parameters for a single-student grades view.
+ */
 type SingleGradesParameters = GradesParameters & {
   student_id: number;
   final_grade_index?: number;
   show_editable?: boolean;
 };
 
+/**
+ * Parameters for a multi-student grades view.
+ */
 type MultipleGradesParameters = GradesParameters & {
   section: string;
 };
 
+/**
+ * Backend payload describing a teaching associated to a project class.
+ */
 type ProjectClassTeachingsResponse = {
   id: string;
   italian_title: string;
@@ -2541,6 +3058,9 @@ type ProjectClassTeachingsResponse = {
   my_teaching?: boolean;
 };
 
+/**
+ * Aggregates teachings by course and keeps per-section info.
+ */
 class CourseSectionsTeachings {
   id: string;
   italian_title: string;
@@ -2548,6 +3068,9 @@ class CourseSectionsTeachings {
   sections: Set<string>;
   my_teaching_refs: Set<string>;
 
+  /**
+   * Creates the aggregate from the first backend row.
+   */
   constructor(props: ProjectClassTeachingsResponse) {
     this.id = props.id;
     this.italian_title = props.italian_title;
@@ -2562,6 +3085,9 @@ class CourseSectionsTeachings {
     ]);
   }
 
+  /**
+   * Builds a card descriptor for the project-course + teachings list.
+   */
   toCard(group: string, learning_session: string): GeneralCardElements {
     const language = getCurrentLanguage();
     const card: GeneralCardElements = {
@@ -2606,12 +3132,18 @@ class CourseSectionsTeachings {
   }
 }
 
+/**
+ * Backend payload used to instantiate a `StudentSummary`.
+ */
 type StudentSummaryProps = {
   id: number;
   name: string;
   surname: string;
 };
 
+/**
+ * Backend payload used to instantiate a `ProjectClassStudent`.
+ */
 type StudentProps = StudentSummaryProps & {
   learning_context_ref?: ResponseItem<{
     id: string;
@@ -2621,6 +3153,9 @@ type StudentProps = StudentSummaryProps & {
   ord_class_section: string;
 };
 
+/**
+ * Backend payload used to instantiate a `StudentInformation`.
+ */
 type StudentInformationProps = StudentSummaryProps & {
   username: string;
   gender: string;
@@ -2634,17 +3169,29 @@ type StudentInformationProps = StudentSummaryProps & {
   class_section: string;
 };
 
+/**
+ * Client-side student summary model.
+ * Provides conversions to generic cards/table cards.
+ */
 class StudentSummary implements StudentSummaryProps {
   id: number;
   name: string;
   surname: string;
 
+  /**
+   * Creates a lightweight student model from a backend summary payload.
+   */
   constructor(student: StudentSummaryProps) {
     this.id = student.id;
     this.name = student.name;
     this.surname = student.surname;
   }
 
+  /**
+   * Builds a simple card descriptor linking to the given student route.
+   *
+   * @param path Destination path used for the card request link.
+   */
   toCard(path: string): GeneralCardElements {
     return {
       id: "" + this.id,
@@ -2663,6 +3210,12 @@ class StudentSummary implements StudentSummaryProps {
     };
   }
 
+  /**
+   * Builds a table row for this student.
+   *
+   * When `index` is provided, an extra index column (and a responsive variant)
+   * is included and linked to the same student entry.
+   */
   toTableCard(index?: number): GeneralTableCardElements {
     const name_surname: CustomElement = {
       id: "name_surname",
@@ -2722,21 +3275,33 @@ class StudentSummary implements StudentSummaryProps {
   }
 }
 
+/**
+ * Backend payload used to instantiate an `OrdinaryClassStudent`.
+ */
 type OrdinaryClassStudentProps = StudentSummaryProps & {
   orientation_credits: number;
   clil_credits: number;
 };
 
+/**
+ * Ordinary-class student payload enriched with credit counters.
+ */
 class OrdinaryClassStudent extends StudentSummary {
   orientation_credits: number;
   clil_credits: number;
 
+  /**
+   * Builds an ordinary-class student model including credit counters.
+   */
   constructor(props: OrdinaryClassStudentProps) {
     super(props);
     this.orientation_credits = props.orientation_credits;
     this.clil_credits = props.clil_credits;
   }
 
+  /**
+   * Builds a table row for admin views, optionally adding actions (move).
+   */
   toTableCard(index?: number, movable = false): GeneralTableCardElements {
     const row_to_return = super.toTableCard(index);
 
@@ -2840,6 +3405,9 @@ class OrdinaryClassStudent extends StudentSummary {
   }
 }
 
+/**
+ * Student model for project classes.
+ */
 class ProjectClassStudent extends StudentSummary {
   learning_context_id?: string;
   ordinary_class: OrdinaryClassSummary;
@@ -2848,6 +3416,12 @@ class ProjectClassStudent extends StudentSummary {
     session_id: string;
   };
 
+  /**
+   * Builds a project-class student wrapper.
+   *
+   * The instance keeps the associated course/session ids to build request/event
+   * payloads for grade and enrollment operations.
+   */
   constructor(props: StudentProps, course_id: string, session_id: string) {
     super(props);
     this.learning_context_id =
@@ -2894,6 +3468,9 @@ class ProjectClassStudent extends StudentSummary {
     return to_ret;
   }*/
 
+  /**
+   * Builds a project-class student row with optional grade/edit controls.
+   */
   toTableCard(
     teacher_id?: number,
     grades?: boolean,
@@ -3175,7 +3752,9 @@ class ProjectClassStudent extends StudentSummary {
     return row_to_return;
   }
 }
-
+/**
+ * Student profile model.
+ */
 class StudentInformation extends StudentSummary {
   username: string;
   gender?: Gender;
@@ -3184,6 +3763,9 @@ class StudentInformation extends StudentSummary {
   email: string;
   ordinary_class: OrdinaryClassSummary;
 
+  /**
+   * Builds a student profile model converting backend strings to dates/enums.
+   */
   constructor(props: StudentInformationProps) {
     super(props);
     this.username = props.username;
@@ -3204,6 +3786,9 @@ class StudentInformation extends StudentSummary {
     });
   }
 
+  /**
+   * Builds a profile card descriptor.
+   */
   toCard(): GeneralCardElements {
     return {
       id: "" + this.username,
@@ -3259,13 +3844,22 @@ class StudentInformation extends StudentSummary {
   }
 }
 
+/**
+ * Minimal learning context reference.
+ */
 type LearningContextSummary = {
   id: string;
   credits?: number | null;
 };
 
+/**
+ * Learning context enriched with title/description.
+ */
 type LearningContext = LearningContextSummary & TitleDescription;
 
+/**
+ * Backend payload used to instantiate an `AnnouncementSummary`.
+ */
 type AnnouncementSummaryProps = {
   id: number;
   publishment: Date;
@@ -3273,16 +3867,25 @@ type AnnouncementSummaryProps = {
   [key in keyof Language as `${Language}_title`]: string;
 };
 
+/**
+ * Full announcement payload (includes message fields).
+ */
 type Announcement = AnnouncementSummaryProps & {
   [key in keyof Language as `${Language}_message`]: string;
 };
 
+/**
+ * Client-side announcement summary model.
+ */
 class AnnouncementSummary implements AnnouncementSummaryProps {
   id: number;
   publishment: Date;
   italian_title: string;
   english_title: string;
 
+  /**
+   * Builds the announcement summary converting the publishment timestamp.
+   */
   constructor(props: AnnouncementSummaryProps) {
     this.id = props.id;
     this.publishment = new Date(props.publishment);
@@ -3290,6 +3893,9 @@ class AnnouncementSummary implements AnnouncementSummaryProps {
     this.english_title = props.english_title;
   }
 
+  /**
+   * Builds a card that triggers the `announcement` event when opened.
+   */
   toCard(): GeneralCardElements {
     const language = getCurrentLanguage();
     return {
@@ -3342,6 +3948,9 @@ class AnnouncementSummary implements AnnouncementSummaryProps {
   }
 }
 
+/**
+ * Parameters used to fetch announcements for a course/session.
+ */
 type AnnouncementParameters = {
   course_id: number;
   session_id: number;
@@ -3350,8 +3959,14 @@ type AnnouncementParameters = {
   teacher_id?: number;
 };
 
+/**
+ * Gender codes used by the backend.
+ */
 type Gender = "M" | "F" | "O";
 
+/**
+ * Maps `Gender` codes to translation keys.
+ */
 const GenderKeys: {
   [key in keyof string as Gender]: string;
 } = {
@@ -3360,14 +3975,23 @@ const GenderKeys: {
   O: "other",
 };
 
+/**
+ * Map that can either store a single value or a sub-map per key.
+ */
 type AlternateList<T> = {
   [key: string]: TmpList<T> | T;
 };
 
+/**
+ * Generic dictionary used heavily across the UI schema.
+ */
 type TmpList<T = any> = {
   [key: string | number]: T;
 };
 
+/**
+ * Backend payload describing a student's progression within a context/area.
+ */
 type Progression = {
   learning_area_ref: ResponseItem<{
     id: string | null;
@@ -3379,6 +4003,9 @@ type Progression = {
   max_credits: number;
 };
 
+/**
+ * Information used to build a login request.
+ */
 type LoginInformation = {
   type: UserType;
   parameters: {
@@ -3386,15 +4013,27 @@ type LoginInformation = {
   };
 };
 
+/**
+ * Supported user roles.
+ */
 type UserType = "student" | "teacher" | "admin";
 
+/**
+ * Optional user sub-role.
+ */
 type UserSubType = "tutor";
 
+/**
+ * Generic login response returned by the backend.
+ */
 type LoginResponse = {
   success: boolean;
   message: string;
 };
 
+/**
+ * Successful login response including the issued token and user identity.
+ */
 type SuccessLoginResponse = LoginResponse & {
   user: UserType;
   token: string;
@@ -3402,11 +4041,17 @@ type SuccessLoginResponse = LoginResponse & {
   id: number;
 };
 
+/**
+ * Backend payload used to instantiate a `UserSummary`.
+ */
 type UserSummaryProps = {
   id: number;
   user: UserType;
 };
 
+/**
+ * Backend payload used to instantiate a `User`.
+ */
 type UserProps = UserSummaryProps & {
   username: string;
   token: string;
@@ -3415,6 +4060,9 @@ type UserProps = UserSummaryProps & {
   // TODO (4): implementare first_access (api di login) per cambio/inserimento password
 };
 
+/**
+ * Base user model exposing id/type/subtype.
+ */
 class UserSummary {
   [key: string]: any;
 
@@ -3422,6 +4070,9 @@ class UserSummary {
   private _type: UserType;
   private _subtype?: UserSubType;
 
+  /**
+   * Creates a user identity wrapper from a minimal backend payload.
+   */
   constructor(props: UserSummaryProps, subtype?: UserSubType) {
     this._id = props.id;
     this._type = props.user;
@@ -3440,17 +4091,28 @@ class UserSummary {
     return this._subtype;
   }
 
+  /**
+   * Lists the keys that can be used when serializing this model.
+   */
   static getProperties() {
     return ["id", "type", "subtype"];
   }
 }
 
+/**
+ * Logged-in user model.
+ *
+ * Stores tokens and exposes helpers like `getLoggedUser()`.
+ */
 class User extends UserSummary {
   private _username: string;
   private _token: string;
   private _refresh_token?: string;
   private _expiration_date: Date;
 
+  /**
+   * Creates the in-memory authenticated user from the stored login payload.
+   */
   constructor(props: UserProps, subtype?: UserSubType) {
     super(props, subtype);
     this._username = props.username;
@@ -3459,40 +4121,69 @@ class User extends UserSummary {
     this._expiration_date = new Date(props.expirationDate);
   }
 
+  /**
+   * Authenticated username.
+   */
   public get username(): string {
     return this._username;
   }
 
+  /**
+   * Current access token.
+   */
   public get token(): string {
     return this._token;
   }
 
+  /**
+   * Updates the in-memory access token.
+   */
   public set token(new_token: string) {
     this._token = new_token;
   }
 
+  /**
+   * Optional refresh token.
+   */
   public get refresh_token(): string | undefined {
     return this._refresh_token;
   }
 
+  /**
+   * Updates the in-memory refresh token.
+   */
   public set refresh_token(new_refresh_token: string | undefined) {
     this._refresh_token = new_refresh_token;
   }
 
+  /**
+   * Updates token expiration date.
+   */
   public set expiration_date(new_expiration: Date) {
     this._expiration_date = new_expiration;
   }
 
+  /**
+   * Token expiration date.
+   */
   public get expiration_date(): Date {
     return this._expiration_date;
   }
 
+  /**
+   * Lists the keys that can be used when serializing this model.
+   */
   static getProperties() {
     return super
       .getProperties()
       .concat(["username", "token", "refresh_token", "expiration_date"]);
   }
 
+  /**
+   * Returns the current authenticated user if available.
+   *
+   * Prefers the Vuex store, then falls back to `sessionStorage`.
+   */
   static getLoggedUser() {
     const session = window.sessionStorage;
     const user: User | undefined = store.state.user;
@@ -3517,6 +4208,12 @@ class User extends UserSummary {
   }
 }
 
+/**
+ * Backend payload used to instantiate a `CourseModel`.
+ *
+ * This structure tracks confirmation dates, "to be modified" flags and
+ * references to proposer teacher / certifying admin.
+ */
 type CourseModelProps = {
   course_ref: ResponseItem<{
     id: number;
@@ -3543,6 +4240,10 @@ type CourseModelProps = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Client-side model for a workflow course.
+ * Provides approval helpers and card rendering.
+ */
 class CourseModel {
   id: number;
   creation_school_year: number;
@@ -3557,6 +4258,12 @@ class CourseModel {
   proposer_teacher?: TeacherSummary;
   preferences?: number;
 
+  /**
+   * Builds a course wrapper from the backend payload.
+   *
+   * The optional `learning_session` argument is used to avoid an extra fetch
+   * when the full session object is already available.
+   */
   constructor(props: CourseModelProps, learning_session?: LearningSession) {
     this.id = (props.course_ref.data as { id: number }).id;
     this.learning_session =
@@ -3605,6 +4312,9 @@ class CourseModel {
     this.preferences = props.preferences ?? undefined;
   }
 
+  /**
+   * Loads additional course parameters (e.g. learning session details) from the API.
+   */
   async loadParms() {
     if (this.learning_session) {
       this.learning_session = await executeLink(
@@ -3614,6 +4324,11 @@ class CourseModel {
     }
   }
 
+  /**
+   * Returns whether the course has been approved.
+   *
+   * For project-class courses, both course and project-class confirmations are required.
+   */
   isApproved() {
     return (
       this.course_confirmation_date instanceof Date &&
@@ -3624,6 +4339,9 @@ class CourseModel {
     );
   }
 
+  /**
+   * Human-readable label for UI lists.
+   */
   toString() {
     const language = getCurrentLanguage();
     return (
@@ -3633,6 +4351,9 @@ class CourseModel {
     );
   }
 
+  /**
+   * Builds a `GeneralCardElements` descriptor used by generic card components.
+   */
   toCard(user: User, view = false): GeneralCardElements {
     const language = getCurrentLanguage();
 
@@ -3740,6 +4461,10 @@ class CourseModel {
 
 type PagesType = "pages" | "editor" | "no_inner_props" | "different_request";
 
+/**
+ * Shapes used by `ModelProposition` to expose different subsets of keys.
+ */
+
 type Pages =
   | "course_id"
   | "title"
@@ -3753,7 +4478,15 @@ type Pages =
   | "images_list"
   | "specific_information";
 
+/**
+ * High-level proposition sections used by the editor workflow.
+ */
+
 type PropositionKeysType = "required" | "optional" | "lists";
+
+/**
+ * Groups of proposition keys used for validation and UI generation.
+ */
 
 type PropositionListsKeys =
   | "access_object"
@@ -3761,6 +4494,10 @@ type PropositionListsKeys =
   | "growth_list"
   | "images_list"
   | "teacher_list";
+
+/**
+ * Keys that must be present/valid before a proposition can be submitted.
+ */
 
 type PropositionRequiredKeys =
   | PropositionListsKeys
@@ -3779,6 +4516,10 @@ type PropositionRequiredKeys =
   | "class_group"
   | "num_section";
 
+/**
+ * Optional keys that can still be part of the proposition payload.
+ */
+
 type PropositionOptionalKeys =
   | "english_title"
   | "english_descr"
@@ -3786,17 +4527,30 @@ type PropositionOptionalKeys =
   | "english_cri"
   | "english_act";
 
+/**
+ * All allowed keys in a proposition object.
+ */
+
 type PropositionKeys =
   | PropositionRequiredKeys
   | PropositionOptionalKeys
   | "course_id";
 
+/**
+ * Proposition workflow modes.
+ */
 type PropositionActions = "view" | "edit" | "propose";
 
+/**
+ * Multi-language title fields of a proposition.
+ */
 type PropositionTitles = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Numeric/structural characteristics of a proposition.
+ */
 type PropositionCharacteristics1 = {
   up_hours: number;
   credits: number;
@@ -3805,27 +4559,45 @@ type PropositionCharacteristics1 = {
   max_students: number;
 };
 
+/**
+ * Proposition taxonomy: selected growth areas and teachings.
+ */
 type PropositionCharacteristics2 = {
   growth_list: number[];
   teaching_list: string[];
 };
 
+/**
+ * Multi-language description fields of a proposition.
+ */
 type PropositionDescription = {
   [key in keyof string as `${Language}_descr`]: string;
 };
 
+/**
+ * Multi-language expected learning results fields.
+ */
 type PropositionExpectedLearningResults = {
   [key in keyof string as `${Language}_exp_l`]: string;
 };
 
+/**
+ * Multi-language evaluation criteria fields.
+ */
 type PropositionCriterions = {
   [key in keyof string as `${Language}_cri`]: string;
 };
 
+/**
+ * Multi-language activities fields.
+ */
 type PropositionActivities = {
   [key in keyof string as `${Language}_act`]: string;
 };
 
+/**
+ * Access constraint for a proposition: which students can enroll.
+ */
 type AccessObject = {
   study_year: number;
   study_address: string;
@@ -3833,18 +4605,30 @@ type AccessObject = {
   presidium: boolean;
 };
 
+/**
+ * Map of learning-context id -> list of access constraints.
+ */
 type PropositionAccessObject = {
   [key: string]: AccessObject[];
 };
 
+/**
+ * Image file attached to a proposition.
+ */
 type PropositionImage = File;
 
+/**
+ * Teacher assignment within a proposition.
+ */
 type PropositionTeacher = {
   teacher_id: number;
   main: boolean;
   sections: string[];
 };
 
+/**
+ * Proposition metadata that ties it to a session/project class and teachers.
+ */
 type PropositionSpecificInformation = {
   session_id: number;
   project_class_code: string;
@@ -3853,6 +4637,9 @@ type PropositionSpecificInformation = {
   teacher_list: PropositionTeacher[];
 };
 
+/**
+ * Fully expanded proposition object (as used by the editor and backend).
+ */
 type PropositionObj = {
   [key in keyof string as PropositionKeys]: any;
 } & {
@@ -3872,6 +4659,14 @@ type PagesTitlesRefs = {
   [key in keyof string as Pages]: string;
 };
 
+/**
+ * Client-side proposition model.
+ *
+ * Wraps the raw `PropositionObj` and offers:
+ * - structured getters/setters
+ * - validation rules (`check`)
+ * - export to backend format (`toProposition`)
+ */
 class ModelProposition {
   [key: string]: any;
 
@@ -3888,6 +4683,13 @@ class ModelProposition {
   private _specific_information: PropositionSpecificInformation;
   private _remaining: Pages[];
 
+  /**
+   * Creates a proposition model from an existing proposition.
+   *
+   * If `proposition` is omitted, an empty proposition is created.
+   * The instance keeps track of which editor pages are still incomplete via
+   * `_remaining`.
+   */
   constructor(proposition?: PropositionObj) {
     const actual_proposition =
       proposition ?? ModelProposition.emptyProposition();
@@ -3972,49 +4774,91 @@ class ModelProposition {
     };
   }
 
+  /**
+   * Course identifier associated to the proposition.
+   */
   public get course_id() {
     return this._course_id;
   }
+
+  /**
+   * Updates the course id and marks the `course_id` page as completed.
+   */
   public set course_id(value: number | undefined) {
     this._course_id = value;
     this._remaining = this._remaining.filter((a) => a != "course_id");
   }
 
+  /**
+   * Multi-language title fields.
+   */
   public get title() {
     return this._title;
   }
+
+  /**
+   * Updates the title and marks the `title` page as completed.
+   */
   public set title(value: PropositionTitles) {
     this._title = value;
     this._remaining = this._remaining.filter((a) => a != "title");
   }
 
+  /**
+   * Numeric/structural characteristics of the proposition.
+   */
   public get characteristics1() {
     return this._characteristics1;
   }
+
+  /**
+   * Updates characteristics and marks the `characteristics1` page as completed.
+   */
   public set characteristics1(value: PropositionCharacteristics1) {
     this._characteristics1 = value;
     this._remaining = this._remaining.filter((a) => a != "characteristics1");
   }
 
+  /**
+   * Taxonomy characteristics (growth areas and teachings).
+   */
   public get characteristics2() {
     return this._characteristics2;
   }
+
+  /**
+   * Updates taxonomy and marks the `characteristics2` page as completed.
+   */
   public set characteristics2(value: PropositionCharacteristics2) {
     this._characteristics2 = value;
     this._remaining = this._remaining.filter((a) => a != "characteristics2");
   }
 
+  /**
+   * Multi-language description fields.
+   */
   public get description() {
     return this._description;
   }
+
+  /**
+   * Updates the description and marks the `description` page as completed.
+   */
   public set description(value: PropositionDescription) {
     this._description = value;
     this._remaining = this._remaining.filter((a) => a != "description");
   }
 
+  /**
+   * Multi-language expected learning results fields.
+   */
   public get expected_learning_results() {
     return this._expected_learning_results;
   }
+
+  /**
+   * Updates expected learning results and marks the page as completed.
+   */
   public set expected_learning_results(
     value: PropositionExpectedLearningResults
   ) {
@@ -4024,41 +4868,77 @@ class ModelProposition {
     );
   }
 
+  /**
+   * Multi-language evaluation criteria fields.
+   */
   public get criterions() {
     return this._criterions;
   }
+
+  /**
+   * Updates criteria and marks the `criterions` page as completed.
+   */
   public set criterions(value: PropositionCriterions) {
     this._criterions = value;
     this._remaining = this._remaining.filter((a) => a != "criterions");
   }
 
+  /**
+   * Multi-language activities fields.
+   */
   public get activities() {
     return this._activities;
   }
+
+  /**
+   * Updates activities and marks the `activities` page as completed.
+   */
   public set activities(value: PropositionActivities) {
     this._activities = value;
     this._remaining = this._remaining.filter((a) => a != "activities");
   }
 
+  /**
+   * Access constraints keyed by learning context.
+   */
   public get access_object() {
     return this._access_object;
   }
+
+  /**
+   * Updates access constraints and marks the `access_object` page as completed.
+   */
   public set access_object(value: PropositionAccessObject) {
     this._access_object = value;
     this._remaining = this._remaining.filter((a) => a != "access_object");
   }
 
+  /**
+   * Attached images list.
+   */
   public get images_list() {
     return this._images_list;
   }
+
+  /**
+   * Updates the image list and marks the `images_list` page as completed.
+   */
   public set images_list(value: PropositionImage[]) {
     this._images_list = value;
     this._remaining = this._remaining.filter((a) => a != "images_list");
   }
 
+  /**
+   * Session/project-class information and teacher assignments.
+   */
   public get specific_information() {
     return this._specific_information;
   }
+
+  /**
+   * Updates specific information, normalizing teacher flags, and marks the page
+   * as completed.
+   */
   public set specific_information(value: PropositionSpecificInformation) {
     this._specific_information = {
       session_id: value.session_id,
@@ -4078,6 +4958,12 @@ class ModelProposition {
     );
   }
 
+  /**
+   * Flattens the current model into the backend proposition payload.
+   *
+   * @param remove_different_request When true, removes keys that are meant to
+   * be sent in a separate request (e.g. `images_list`).
+   */
   toProposition(remove_different_request = true): PropositionObj {
     const proposition: {
       [key: string]: any;
@@ -4112,14 +4998,29 @@ class ModelProposition {
     return proposition as PropositionObj;
   }
 
+  /**
+   * Returns true when all required pages have been filled.
+   */
   isComplete() {
     return this._remaining.length == 0;
   }
 
+  /**
+   * Pages that are still missing/invalid for a complete proposition.
+   */
   public get remaining(): string[] {
     return this._remaining;
   }
 
+  /**
+   * Returns the ordered list of pages for different editor contexts.
+   *
+   * - `undefined`: full list including course id
+   * - `pages`: pages shown in the main editor workflow
+   * - `editor`: subset used by rich editors
+   * - `no_inner_props`: pages where the value is the payload itself
+   * - `different_request`: pages handled by a dedicated backend request
+   */
   static getProps(type?: PagesType): Pages[] {
     switch (type) {
       case undefined:
@@ -4163,6 +5064,9 @@ class ModelProposition {
     }
   }
 
+  /**
+   * Returns the translation keys used as titles for each proposition page.
+   */
   static getTitles(): PagesTitlesRefs {
     return {
       course_id: "reference_model",
@@ -4179,10 +5083,19 @@ class ModelProposition {
     };
   }
 
+  /**
+   * Returns the page index within the full proposition workflow.
+   */
   static getPageIndex(page: Pages) {
     return ModelProposition.getProps().findIndex((a) => a == page);
   }
 
+  /**
+   * Returns the page index in which a given backend key belongs.
+   *
+   * It first checks if the key is itself a page name; otherwise it searches the
+   * inner objects of each page.
+   */
   getKeyIndex(key: PropositionKeys) {
     const pages = ModelProposition.getProps("pages");
 
@@ -4201,6 +5114,9 @@ class ModelProposition {
     return index;
   }
 
+  /**
+   * Returns proposition keys grouped by requirement category.
+   */
   static getPropositionProps(type: PropositionKeysType): PropositionKeys[] {
     const lists: PropositionListsKeys[] = [
       "access_object",
@@ -4249,6 +5165,12 @@ class ModelProposition {
     return keys;
   }
 
+  /**
+   * Returns validation rules for required proposition keys.
+   *
+   * Each entry includes a rule, an error message, and which actions it applies
+   * to (e.g. propose vs edit).
+   */
   static getRequiredInformation(): {
     [key in keyof string as PropositionRequiredKeys]: {
       rule: boolean | number[] | ((proposition: PropositionObj) => boolean);
@@ -4407,6 +5329,11 @@ class ModelProposition {
     };
   }
 
+  /**
+   * Validates the proposition for a given workflow action.
+   *
+   * @returns A map of missing/invalid required keys to error messages.
+   */
   check(action: PropositionActions) {
     const required_information = ModelProposition.getRequiredInformation();
     const proposition = this.toProposition();
@@ -4483,11 +5410,23 @@ type TitleDescription = {
   [key in keyof string as `${Language}_description`]?: string;
 };
 
+/**
+ * Convenience shape for entities with multi-language title/description.
+ */
+
+/**
+ * Backend payload used to instantiate a `GrowthArea`.
+ *
+ * The backend may provide either a direct `id` or a nested `growth_area_ref`.
+ */
 type GrowthAreaProps = {
   id?: number;
   growth_area_ref?: ResponseItem<{ id: number }>;
 } & TitleDescription;
 
+/**
+ * Growth area model with card conversion.
+ */
 class GrowthArea {
   id: number;
   italian_title: string;
@@ -4495,6 +5434,9 @@ class GrowthArea {
   italian_description?: string;
   english_description?: string;
 
+  /**
+   * Builds the model from either a direct id or a `growth_area_ref`.
+   */
   constructor(props: GrowthAreaProps) {
     this.id =
       props.growth_area_ref != undefined
@@ -4506,6 +5448,9 @@ class GrowthArea {
     this.english_description = props.english_description;
   }
 
+  /**
+   * Creates a removable card representation (used in proposition editors).
+   */
   toCard(disabled = false): GeneralCardElements {
     const language = getCurrentLanguage();
     return {
@@ -4536,11 +5481,19 @@ class GrowthArea {
   }
 }
 
+/**
+ * Backend payload used to instantiate a `Teaching`.
+ *
+ * The backend may provide either a direct `id` or a nested `teaching_ref`.
+ */
 type TeachingProps = {
   id?: string;
   teaching_ref?: ResponseItem<{ id: string }>;
 } & TitleDescription;
 
+/**
+ * Teaching model with card conversion.
+ */
 class Teaching {
   id: string;
   italian_title: string;
@@ -4548,6 +5501,9 @@ class Teaching {
   italian_description?: string;
   english_description?: string;
 
+  /**
+   * Builds the model from either a direct id or a `teaching_ref`.
+   */
   constructor(props: TeachingProps) {
     this.id =
       props.teaching_ref != undefined
@@ -4559,6 +5515,9 @@ class Teaching {
     this.english_description = props.english_description;
   }
 
+  /**
+   * Creates a removable card representation (used in proposition editors).
+   */
   toCard(disabled = false): GeneralCardElements {
     const language = getCurrentLanguage();
     return {
@@ -4594,12 +5553,22 @@ type StudyAddress = {
   max_classes: number;
 } & TitleDescription;
 
+/**
+ * Study address entity used in access constraints.
+ */
+
+/**
+ * Access constraint model that can be converted to cards and backend objects.
+ */
 class AccessProposition {
   study_year: number;
   study_address: StudyAddress;
   presidium: boolean;
   main_study_year: boolean;
 
+  /**
+   * Creates a single access constraint entry.
+   */
   constructor(
     study_year: number,
     study_address: StudyAddress,
@@ -4612,6 +5581,9 @@ class AccessProposition {
     this.main_study_year = main_study_year;
   }
 
+  /**
+   * Builds a card used in the proposition access editor.
+   */
   toCard(learning_context_id: string, disabled = false): GeneralCardElements {
     const language = getCurrentLanguage();
 
@@ -4660,6 +5632,9 @@ class AccessProposition {
     };
   }
 
+  /**
+   * Serializes to the backend-friendly `AccessObject` shape.
+   */
   toAccessObj(): AccessObject {
     return {
       study_year: this.study_year,
@@ -4670,6 +5645,9 @@ class AccessProposition {
   }
 }
 
+/**
+ * Backend payload used to instantiate a `Teacher`.
+ */
 type TeacherProps = {
   id: number;
   cf: string;
@@ -4682,11 +5660,17 @@ type TeacherProps = {
   email: string;
 };
 
+/**
+ * Minimal teacher model.
+ */
 class TeacherSummary {
   id: number;
   name: string;
   surname: string;
 
+  /**
+   * Creates a compact teacher identity wrapper.
+   */
   constructor(summary: { id: number; name: string; surname: string }) {
     this.id = summary.id;
     this.name = summary.name;
@@ -4694,6 +5678,9 @@ class TeacherSummary {
   }
 }
 
+/**
+ * Teacher profile model.
+ */
 class Teacher extends TeacherSummary {
   username: string;
   cf?: string;
@@ -4703,6 +5690,9 @@ class Teacher extends TeacherSummary {
   address?: string;
   email?: string;
 
+  /**
+   * Builds a teacher profile converting backend strings to dates and enums.
+   */
   constructor(teacher: TeacherProps) {
     super({
       id: teacher.id,
@@ -4721,6 +5711,9 @@ class Teacher extends TeacherSummary {
     this.email = teacher.email;
   }
 
+  /**
+   * Builds a profile card descriptor.
+   */
   toCard(): GeneralCardElements {
     return {
       id: "" + this.username,
@@ -4770,11 +5763,17 @@ class Teacher extends TeacherSummary {
   }
 }
 
+/**
+ * Proposition-specific teacher assignment model.
+ */
 class TeacherProposition {
   teacher: TeacherSummary;
   main: boolean;
   sections: string[];
 
+  /**
+   * Creates a proposition teacher assignment and normalizes sections.
+   */
   constructor(
     teacher: TeacherSummary,
     main: boolean,
@@ -4792,6 +5791,9 @@ class TeacherProposition {
     }
   }
 
+  /**
+   * Builds a removable card representation.
+   */
   toCard(disabled = false): GeneralCardElements {
     const card: GeneralCardElements = {
       id: "" + this.teacher.id,
@@ -4837,6 +5839,9 @@ class TeacherProposition {
     return card;
   }
 
+  /**
+   * Serializes to the backend `PropositionTeacher` shape.
+   */
   toTeacherObj(): PropositionTeacher {
     return {
       teacher_id: this.teacher.id,
@@ -4846,6 +5851,9 @@ class TeacherProposition {
   }
 }
 
+/**
+ * Backend constraint payload used to compute allowed access.
+ */
 type OpenToConstraint = {
   study_year_ref: ResponseItem<{ id: number }>;
   study_address_ref: ResponseItem<{ id: string }>;
@@ -4856,6 +5864,9 @@ type OpenToConstraint = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Backend payload used to instantiate a `ProjectClassSummary`.
+ */
 type ProjectClassSummaryProps = {
   course_id: number;
   learning_session: number;
@@ -4865,6 +5876,9 @@ type ProjectClassSummaryProps = {
   [key in keyof string as `${Language}_title`]: string;
 };
 
+/**
+ * Backend payload used to instantiate an `AdminProjectClass`.
+ */
 type AdminProjectClassProps = ProjectClassSummaryProps & {
   // TODO (7): generalizzare nome, dato che possono accederci tutti
   teacher_ref: ResponseItem<{
@@ -4881,6 +5895,9 @@ type AdminProjectClassProps = ProjectClassSummaryProps & {
   final_confirmation: string | null;
 };
 
+/**
+ * Project class payload with teacher/admin refs used by admin screens.
+ */
 class ProjectClassSummary {
   course_id: number;
   learning_session: LearningSession;
@@ -4889,6 +5906,9 @@ class ProjectClassSummary {
   italian_title: string;
   english_title: string;
 
+  /**
+   * Builds a project class summary and optionally reuses an existing session object.
+   */
   constructor(
     props: ProjectClassSummaryProps,
     learning_session?: LearningSession
@@ -4911,6 +5931,9 @@ class ProjectClassSummary {
     this.english_title = props.english_title;
   }
 
+  /**
+   * Loads learning session details from the API.
+   */
   async loadParms() {
     await executeLink(
       "/v1/learning_sessions/" + this.learning_session.id,
@@ -4920,6 +5943,9 @@ class ProjectClassSummary {
     );
   }
 
+  /**
+   * Builds a card descriptor for lists and management pages.
+   */
   toCard(
     path?: string,
     section?: string,
@@ -5017,6 +6043,9 @@ class ProjectClassSummary {
   }
 }
 
+/**
+ * Admin-facing project class model with additional state.
+ */
 class AdminProjectClass extends ProjectClassSummary {
   teacher_id: number;
   teacher_name: string;
@@ -5027,6 +6056,9 @@ class AdminProjectClass extends ProjectClassSummary {
   to_be_modified?: string;
   final_confirmation?: Date;
 
+  /**
+   * Builds the admin model and converts the `final_confirmation` date.
+   */
   constructor(
     props: AdminProjectClassProps,
     learning_session?: LearningSession
@@ -5044,10 +6076,16 @@ class AdminProjectClass extends ProjectClassSummary {
     this.final_confirmation = !isNaN(tmp_date.getTime()) ? tmp_date : undefined;
   }
 
+  /**
+   * Loads additional parameters by delegating to `ProjectClassSummary`.
+   */
   async loadParms() {
     await super.loadParms();
   }
 
+  /**
+   * Drops admin-only fields and returns a `ProjectClassSummary`.
+   */
   toProjectClassSummary() {
     return new ProjectClassSummary(
       {
@@ -5062,6 +6100,11 @@ class AdminProjectClass extends ProjectClassSummary {
     );
   }
 
+  /**
+   * Converts this admin project class to a card.
+   *
+   * Extends the base card with teacher/admin metadata and optional flags.
+   */
   toCard(
     path?: string,
     section?: string,
@@ -5127,11 +6170,21 @@ type CardListDescription = {
   on_click?: () => any;
 };
 
+/**
+ * Descriptor used by list pages to render a cards list and empty-state message.
+ */
+
+/**
+ * Minimal admin model.
+ */
 class AdminSummary {
   id: number;
   name: string;
   surname: string;
 
+  /**
+   * Creates a compact admin identity wrapper.
+   */
   constructor(summary: { id: number; name: string; surname: string }) {
     this.id = summary.id;
     this.name = summary.name;
@@ -5139,6 +6192,12 @@ class AdminSummary {
   }
 }
 
+/**
+ * Backend payload used to instantiate an `Admin`.
+ *
+ * Dates and enums are typically provided as strings by the backend and will be
+ * converted by the `Admin` constructor.
+ */
 type AdminProps = {
   id: number;
   cf: string;
@@ -5151,6 +6210,9 @@ type AdminProps = {
   email: string;
 };
 
+/**
+ * Admin profile model.
+ */
 class Admin extends AdminSummary {
   username: string;
   cf?: string;
@@ -5160,6 +6222,9 @@ class Admin extends AdminSummary {
   address?: string;
   email?: string;
 
+  /**
+   * Builds an admin profile converting backend strings to dates and enums.
+   */
   constructor(admin: AdminProps) {
     super({
       id: admin.id,
@@ -5176,6 +6241,9 @@ class Admin extends AdminSummary {
     this.email = admin.email;
   }
 
+  /**
+   * Builds a profile card descriptor.
+   */
   toCard(): GeneralCardElements {
     return {
       id: "" + this.username,
@@ -5230,10 +6298,18 @@ type ImageDescriptor = {
   name: string;
 };
 
+/**
+ * Lightweight descriptor for images already uploaded/stored remotely.
+ */
+
 type DefaultLink = {
   name: string;
   index: number;
 };
+
+/**
+ * Default navigation target descriptor (by name and positional index).
+ */
 
 type AlertInformation = {
   title: string;
@@ -5242,11 +6318,19 @@ type AlertInformation = {
   inputs?: AlertInput[];
 };
 
+/**
+ * Standardized alert payload compatible with Ionic alert controller.
+ */
+
 enum SubscriptionsManagerMode {
   SELF_SUBSCRIPTION,
   SUBSCRIPTION,
   MOVE,
 }
+
+/**
+ * Operational mode for `SubscriptionsManager`.
+ */
 
 type EnrollmentAvailability = {
   course: EnrollmentCardElements | undefined;
@@ -5254,12 +6338,26 @@ type EnrollmentAvailability = {
   available_credits: boolean;
 };
 
+/**
+ * Result of checking whether a student can (un)subscribe from a course.
+ */
+
 type CourseReferences = {
   learning_area_id: string;
   learning_context_id: string;
   indexes: TmpList<number | string>;
 };
 
+/**
+ * Locates a course within the internal manager structures.
+ */
+
+/**
+ * Client-side orchestrator for subscription/enrollment flows.
+ *
+ * It loads constraints from the backend, keeps track of remaining credits and
+ * per-context/course availability, and updates linked cards when changes occur.
+ */
 class SubscriptionsManager {
   private _mode: SubscriptionsManagerMode;
   private _all_courses: TmpList<CardsList<EnrollmentCardElements>>;
@@ -5285,6 +6383,9 @@ class SubscriptionsManager {
   private learning_contexts: LearningContext[];
   private learning_context_index: number;
 
+  /**
+   * Creates a new subscriptions manager instance.
+   */
   constructor(mode = SubscriptionsManagerMode.SELF_SUBSCRIPTION) {
     this._mode = mode;
     this._all_courses = {};
@@ -5314,6 +6415,9 @@ class SubscriptionsManager {
     this.learning_contexts = [];
   }
 
+  /**
+   * Resets internal state (courses, credits, indexes and caches).
+   */
   reset() {
     this._all_courses = {};
     this._courses = {
@@ -5328,6 +6432,9 @@ class SubscriptionsManager {
     this.learning_contexts = [];
   }
 
+  /**
+   * Loads all constraints and course correspondences needed to drive enrollment flows.
+   */
   async loadParameters(
     student: UserSummary,
     ordinary_class: OrdinaryClassSummary,
@@ -5528,32 +6635,53 @@ class SubscriptionsManager {
     }
   }
 
+  /**
+   * Current operational mode.
+   */
   public get mode(): SubscriptionsManagerMode {
     return this._mode;
   }
 
+  /**
+   * Currently visible courses (after calling `showCourses`).
+   */
   public get courses() {
     return this._courses;
   }
 
+  /**
+   * All courses grouped by learning context and learning area.
+   */
   public get all_courses() {
     return this._all_courses;
   }
 
+  /**
+   * Returns the last course referenced by `checkEnrollmentAvailability`.
+   */
   public get course() {
     return this._courses.cards[
       this.last_mentioned_course.courses_indexes.group
     ][this.last_mentioned_course.courses_indexes.index as number];
   }
 
+  /**
+   * Remaining credits per context (and optionally per learning area).
+   */
   public get remaing_credits(): AlternateList<number> {
     return this._remaining_credits;
   }
 
+  /**
+   * Remaining courses per context/group (and optionally per learning area).
+   */
   public get remaining_courses(): AlternateList<TmpList<number>> {
     return this._remaining_courses;
   }
 
+  /**
+   * Finds where a course is located in the internal structures.
+   */
   getCourseReferences(course_id: string): CourseReferences | undefined {
     const learning_context_id = this.course_correspondences.find(
       (a) => a.course_id == parseInt(course_id)
@@ -5588,6 +6716,9 @@ class SubscriptionsManager {
       : undefined;
   }
 
+  /**
+   * Populates `_courses` with the courses visible for the given context/area.
+   */
   showCourses(
     learning_context_id: string,
     learning_area_id: string,
@@ -5626,6 +6757,9 @@ class SubscriptionsManager {
     }
   }
 
+  /**
+   * Returns remaining-course counters for a given context (and optionally area).
+   */
   getGroupRemainingCourses(
     learning_context_id: string,
     learning_area_id?: string
@@ -5644,6 +6778,9 @@ class SubscriptionsManager {
       : (this.remaining_courses[learning_context_id] as TmpList<number>) ?? {};
   }
 
+  /**
+   * Removes and returns a course from `_all_courses`.
+   */
   private removeCourse(
     context_id: string,
     learning_area_id: string,
@@ -5659,6 +6796,9 @@ class SubscriptionsManager {
     )[0];
   }
 
+  /**
+   * Updates a course entry in `_all_courses`.
+   */
   private updateCourse(
     context_id: string,
     learning_area_id: string,
@@ -5670,6 +6810,9 @@ class SubscriptionsManager {
     );
   }
 
+  /**
+   * Clears the last referenced course cache.
+   */
   private resetLastMentionedCourse() {
     this.last_mentioned_course = {
       id: undefined,
@@ -5688,6 +6831,9 @@ class SubscriptionsManager {
     };
   }
 
+  /**
+   * Returns whether the student is compliant with remaining credits constraints.
+   */
   isStudentCompliant() {
     this._remaining_credits["PER"] = 0;
     const learning_contexts = Object.keys(this.remaing_credits);
@@ -5723,6 +6869,9 @@ class SubscriptionsManager {
     return compliant;
   }
 
+  /**
+   * Computes whether a course can be selected given credits and per-group limits.
+   */
   checkEnrollmentAvailability(
     learning_context_id: string,
     learning_area_id: string,
@@ -5821,6 +6970,9 @@ class SubscriptionsManager {
     };
   }
 
+  /**
+   * Applies an enrollment change to the current course and updates linked cards.
+   */
   updateCourseAndLinked(value: Date | boolean) {
     const contexts_to_edit = this.course_correspondences.filter(
       (a) => "" + a.course_id == this.course.id
@@ -5890,6 +7042,9 @@ class SubscriptionsManager {
     return outcome;
   }
 
+  /**
+   * Updates remaining credits/courses after a subscribe/unsubscribe action.
+   */
   updateCredits(unsubscribe: boolean) {
     const group_remaining_courses = this.getGroupRemainingCourses(
       this.last_mentioned_course.references.learning_context_id,
@@ -5929,6 +7084,10 @@ enum SuccessCodes {
   GENERIC = "0",
 }
 
+/**
+ * Success codes used by the app to classify outcomes.
+ */
+
 enum ErrorCodes {
   GENERIC = "E_0",
   BAD_REQUEST = "E_1",
@@ -5936,12 +7095,22 @@ enum ErrorCodes {
   ALREADY_EXISTS = "E_3",
 }
 
+/**
+ * Error codes used by the app to classify outcomes.
+ */
+
+/**
+ * Standard operation outcome returned/consumed by various actions.
+ */
 type Outcome = {
   code: SuccessCodes | ErrorCodes;
   subcode?: number;
   message?: string;
 };
 
+/**
+ * Helper structure used to represent learning areas and their distribution.
+ */
 type LearningAreasStructures = {
   distribution: TmpList<
     {
@@ -5951,6 +7120,9 @@ type LearningAreasStructures = {
   list: LearningArea[];
 };
 
+/**
+ * Backend payload used by `SubscriptionsManager` to compute remaining credits/courses.
+ */
 type ConstraintProps = {
   id: number;
   learning_session_ref: ResponseItem<{
@@ -5969,6 +7141,9 @@ type ConstraintProps = {
   credits: number;
 };
 
+/**
+ * Pairing of student id and grade value.
+ */
 type StudentGrade<T = number> = {
   student_id: number;
   grade_value: T;

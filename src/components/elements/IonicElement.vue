@@ -1,5 +1,7 @@
 <template>
+  <!-- Modal for date input elements -->
   <ion-modal v-if="element.type == 'input_date'" :keep-contents-mounted="true">
+    <!-- Date picker for input_date type -->
     <ion-datetime
       :id="'date_' + element.id"
       @ion-change="changeDate"
@@ -13,11 +15,13 @@
       :value="date_ref"
     />
   </ion-modal>
+  <!-- Render raw HTML content if type is 'html' -->
   <div
     v-if="element.type == 'html'"
     v-html="element.content"
     :class="actual_classes.html"
   ></div>
+  <!-- Standard input (not password) -->
   <ion-input
     v-else-if="element.type == 'input' && element.params?.type != 'password'"
     :type="element.params?.type ?? 'text'"
@@ -56,6 +60,7 @@
       $emit('signal_event');
     "
   />
+  <!-- Password input with show/hide toggle -->
   <ion-item
     v-else-if="element.type == 'input' && element.params?.type == 'password'"
     :class="actual_classes.item"
@@ -88,6 +93,7 @@
         }
       "
     />
+    <!-- Button to toggle password visibility -->
     <ion-button
       slot="end"
       fill="clear"
@@ -101,6 +107,7 @@
       />
     </ion-button>
   </ion-item>
+  <!-- Checkbox input -->
   <ion-checkbox
     v-else-if="element.type == 'checkbox'"
     :disabled="element.params?.disabled"
@@ -122,7 +129,9 @@
       }
     "
   />
+  <!-- Elements without linkType: render as label, icon, or string_icon -->
   <template v-else-if="element.linkType == undefined">
+    <!-- Render string or title as label -->
     <ion-label
       v-if="element.type == 'string' || element.type == 'title'"
       :color="getIonicColor(element.colors?.text)"
@@ -131,6 +140,7 @@
       <template v-if="element.type == 'string'">
         {{ element.content }}
       </template>
+      <!-- Title (bold) -->
       <template v-else>
         <!--<h2>-->
         <!-- TODO (5): ingrandire titolo (magari mettendo un parametro per i gradi, es. h1, h2, ...) -->
@@ -138,6 +148,7 @@
         <!--</h2>-->
       </template></ion-label
     >
+    <!-- Render icon element -->
     <ion-icon
       v-else-if="element.type == 'icon'"
       :ios="castIconAlternatives(element.content).ios"
@@ -145,12 +156,14 @@
       :color="getIonicColor(element.colors?.text)"
       :class="actual_classes.icon"
     />
+    <!-- Render string_icon element (label + icon) -->
     <ion-item
       v-else-if="element.type == 'string_icon'"
       :lines="element.colors?.borders != undefined ? 'inset' : 'none'"
       :color="getIonicColor(element.colors?.background)"
       :class="actual_classes.item"
     >
+      <!-- Icon after text -->
       <template v-if="!castStringIcon(element.content).order">
         <ion-label
           :color="getIonicColor(element.colors?.text)"
@@ -165,6 +178,7 @@
           :class="actual_classes.icon"
         />
       </template>
+      <!-- Icon before text -->
       <template v-else>
         <ion-icon
           :ios="castStringIcon(element.content).icon.ios"
@@ -183,6 +197,7 @@
         </ion-label>
       </template>
     </ion-item>
+    <!-- Date input button (for input_date type) -->
     <ion-item
       v-if="element.type == 'input_date'"
       lines="none"
@@ -203,7 +218,9 @@
       />
     </ion-item>
   </template>
+  <!-- Elements with linkType: clickable labels, buttons, or string_icon with links/events -->
   <template v-else>
+    <!-- Clickable label for string/title with link/event -->
     <ion-label
       v-if="element.type == 'string' || element.type == 'title'"
       :color="getIonicColor(element.colors?.text)"
@@ -230,10 +247,12 @@
       <template v-if="element.type == 'string'">
         {{ castEventString(element.content).text }}
       </template>
+      <!-- Title (bold) -->
       <template v-else>
         <b>{{ castEventString(element.content).text }}</b>
       </template>
     </ion-label>
+    <!-- Clickable icon or string_icon as button (link/event) -->
     <ion-button
       v-else-if="
         element.type == 'icon' ||
@@ -273,6 +292,7 @@
       "
       :class="actual_classes.button"
     >
+      <!-- Text before icon (string_icon) -->
       <ion-label
         v-if="
           element.type == 'string_icon' &&
@@ -301,6 +321,7 @@
         :color="getIonicColor(element.colors?.text)"
         :class="actual_classes.icon"
       />
+      <!-- Text after icon (string_icon) -->
       <ion-label
         v-if="
           element.type == 'string_icon' && castStringIcon(element.content).order
@@ -312,12 +333,14 @@
         {{ castStringIcon(element.content).text }}
       </ion-label>
     </ion-button>
+    <!-- string_icon as item with clickable icon (link/event) -->
     <ion-item
       v-else-if="element.type == 'string_icon'"
       :lines="element.colors?.borders != undefined ? 'inset' : 'none'"
       :color="getIonicColor(element.colors?.background)"
       :class="actual_classes.item"
     >
+      <!-- Text before icon -->
       <ion-label
         v-if="
           castStringIcon(element.content).order == undefined ||
@@ -331,6 +354,7 @@
       >
         {{ castStringIcon(element.content).text }}
       </ion-label>
+      <!-- Clickable icon button -->
       <ion-button
         :disabled="disabled"
         fill="clear"
@@ -360,6 +384,7 @@
           :class="actual_classes.icon"
         />
       </ion-button>
+      <!-- Text after icon -->
       <ion-label
         v-if="castStringIcon(element.content).order"
         :color="getIonicColor(element.colors?.text)"
@@ -372,6 +397,17 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName IonicElement
+ * @description
+ * Renderer for “data-driven” UI elements defined by `CustomElement`.
+ * Converts a payload (type+content+colors+classes+link) into Ionic/HTML widgets.
+ *
+ * Link handling:
+ * - `linkType === 'request'`: writes `store.state.request` and emits `execute_link`.
+ * - `linkType === 'event'`: writes `store.state.event` and emits `signal_event`.
+ */
+
 import {
   RequestIcon,
   CustomElement,
@@ -432,6 +468,9 @@ const castEventString = (a: any) => a as EventString;
 const castRequestStringIcon = (a: any) => a as RequestStringIcon;
 const castEventStringIcon = (a: any) => a as EventStringIcon;
 
+/**
+ * Update the classes for each sub-element based on the current breakpoint.
+ */
 const updateElementClasses = () => {
   for (const sub_element in actual_classes) {
     updateBreakpointClasses(
@@ -443,19 +482,24 @@ const updateElementClasses = () => {
     );
   }
 };
+
+/**
+ * Update the current breakpoint and refresh element classes.
+ */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
-
   updateElementClasses();
 };
+
+/**
+ * Handler for date change events from ion-datetime.
+ * Updates the element's content and emits the appropriate events.
+ */
 const changeDate = (event: DatetimeCustomEvent) => {
   const tmp_str_date = event.target.value;
-
   let tmp_date: Date;
-
   if (typeof tmp_str_date == "string") {
     tmp_date = new Date(tmp_str_date);
-
     if (actual_max_date == undefined || tmp_date <= new Date(actual_max_date)) {
       element_ref.value.content = toDateString(tmp_date);
     } else {
@@ -473,6 +517,10 @@ const changeDate = (event: DatetimeCustomEvent) => {
   };
   emit("signal_event");
 };
+
+/**
+ * Toggle the visibility of the password input field.
+ */
 const togglePassword = () => {
   if (element_ref.value.params == undefined) {
     element_ref.value.params = {};
@@ -493,7 +541,7 @@ const emit = defineEmits(["execute_link", "signal_event", "update:element"]);
 const css_text_color =
   props.element.colors?.text != undefined
     ? getCssColor(props.element.colors.text)
-    : undefined; // label per input
+    : undefined; // label for input
 const css_background_color =
   props.element.colors?.background != undefined
     ? getCssColor(props.element.colors.background)

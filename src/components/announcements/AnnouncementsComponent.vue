@@ -119,6 +119,20 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName AnnouncementsComponent
+ * @description
+ * Announcements feature component for a course/session.
+ * Loads announcements from the backend and renders them through `ListCard`.
+ * For teachers, it also provides actions to publish a new announcement and filter by section.
+ *
+ * Modal flow:
+ * - Opens `AnnouncementsPublisher` to compose/publish.
+ * - Opens `AnnouncementViewer` to display a single announcement.
+ *
+ * Events are driven by `store.state.event` and propagated via `signal_event` / `execute_link` from child elements.
+ */
+
 import {
   AlertInformation,
   AnnouncementSummary,

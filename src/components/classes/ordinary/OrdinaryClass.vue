@@ -1,5 +1,6 @@
 <template>
   <div class="ion-padding-horizontal">
+    <!-- Alert modal: displays confirmation dialogs and error/success messages -->
     <ion-alert
       :is-open="alert_open"
       :header="alert_information.title"
@@ -7,6 +8,7 @@
       :buttons="alert_information.buttons"
       @didDismiss="closeModal(store.state.event.event)"
     />
+    <!-- Student mover modal: project class selector for student subscription -->
     <ion-modal
       id="student_mover"
       :is-open="student_mover_open"
@@ -32,6 +34,7 @@
         </template>
       </suspense>
     </ion-modal>
+    <!-- Class title: study year and address -->
     <div class="ion-margin-start">
       <ionic-element
         :element="
@@ -49,6 +52,7 @@
         "
       />
     </div>
+    <!-- Section selector: optional section picker if enabled -->
     <custom-select
       v-if="sections_use && sections.length > 0"
       v-model:selected_option="selected_section"
@@ -57,6 +61,7 @@
       :aria_label="getCurrentElement('section')"
       :placeholder="getCurrentElement('section_choice')"
     />
+    <!-- Learning session selector: admin-only session picker -->
     <custom-select
       v-if="user.type == 'admin' && learning_sessions.length > 0"
       v-model:selected_option="selected_session"
@@ -66,6 +71,7 @@
       :placeholder="getCurrentElement('learning_sessions_choice')"
       :getCompleteName="LearningSession.toString"
     />
+    <!-- Admin action: add people to ordinary class -->
     <div
       v-if="user.type == 'admin' && learning_sessions.length > 0"
       style="display: flex"
@@ -83,12 +89,14 @@
         "
       />
     </div>
+    <!-- Students tables: non-compliant and compliant students -->
     <template
       v-if="
         non_compliant_table.cards[''].length > 0 ||
         students_table.cards[''].length > 0
       "
     >
+      <!-- Non-compliant students table (admin only) -->
       <template v-if="user.type == 'admin'">
         <div class="ion-padding-top">
           <ionic-element
@@ -138,6 +146,7 @@
           </suspense>
         </div>
       </template>
+      <!-- Compliant students table (or all students for non-admin) -->
       <div class="ion-padding-top">
         <ionic-element
           :element="
@@ -188,6 +197,7 @@
         </suspense>
       </div>
     </template>
+    <!-- Empty state: display when no students available -->
     <div v-else class="ion-padding-start ion-padding-top">
       <ionic-element
         :element="
@@ -200,6 +210,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName OrdinaryClass
+ * @description
+ * Screen-level component that displays an **ordinary class** and its enrolled students.
+ *
+ * It orchestrates UI state (alerts/modals), loads data from the backend, and exposes
+ * actions such as managing sections, showing associated learning sessions, and
+ * triggering student moves/enrollment operations (admin/teacher flows).
+ */
 import {
   AdminProjectClass,
   AlertInformation,
@@ -240,6 +259,11 @@ type AvailableModal =
   | "success"
   | "error";
 
+/**
+ * Setup and open a modal or alert based on the requested window type.
+ * @param window - Type of modal/alert to open
+ * @param message - Optional message for success/error alerts
+ */
 const setupModalAndOpen = (
   window: AvailableModal = store.state.event.event,
   message: string = store.state.event.data?.message
@@ -276,6 +300,11 @@ const setupModalAndOpen = (
       break;
   }
 };
+
+/**
+ * Close the specified modal or alert.
+ * @param window - Type of modal/alert to close
+ */
 const closeModal = (window: AvailableModal) => {
   switch (window) {
     case "student_mover":
@@ -289,20 +318,19 @@ const closeModal = (window: AvailableModal) => {
       break;
   }
 };
+
+/**
+ * Update students data and tables (non-compliant and compliant).
+ * Fetches fresh data from backend if new_search=true, otherwise just refreshes tables.
+ * @param do_non_compliants - Whether to update non-compliant students table
+ * @param do_students - Whether to update compliant students table
+ * @param new_search - Whether to fetch fresh data from backend
+ */
 const updateStudents = async (
   do_non_compliants = true,
   do_students = true,
   new_search = true
 ) => {
-  /**
-   * @description Update (students, students_table, non_compliant_students_index and non_compliant_table) or (students_table and/or non_compliant_table)
-   * @param new_search If true, update search for new students and new non compliant students and update all
-   * @param do_students If true and new_search, update students_table
-   * @param do_non_compliants If true and new_search, update non_compliant_students_index and non_compliant_table
-   * @returns void
-   * @async
-   */
-
   if (
     learning_session?.getStatus() == LearningSessionStatus.FUTURE ||
     learning_session?.getStatus() == LearningSessionStatus.UPCOMING
@@ -377,6 +405,10 @@ const updateStudents = async (
     }
   }
 };
+
+/**
+ * Handle events from child components and route to appropriate modal/alert.
+ */
 const manageEvent = () => {
   switch (store.state.event.event) {
     case "no_courses":
@@ -388,6 +420,11 @@ const manageEvent = () => {
       break;
   }
 };
+
+/**
+ * Handler for "yes" button in confirmation dialogs.
+ * Executes the requested action (e.g., move student) and handles the outcome.
+ */
 const yes_handler = async () => {
   let outcome: Outcome, tmp_index: number, tmp_target_index: number;
 
@@ -463,6 +500,12 @@ const yes_handler = async () => {
       break;
   }
 };
+
+/**
+ * Subscribe a student to a course within a learning session.
+ * Validates enrollment availability and updates subscription state.
+ * @returns Outcome object with success/error code and message
+ */
 const subscribeStudent = async (): Promise<Outcome> => {
   const outcome: Outcome = {
     code: SuccessCodes.GENERIC,
@@ -648,6 +691,7 @@ let found = false;
 let count: number;
 let tmp_learning_session: LearningSession;
 
+// --- Initialization: load learning sessions and students data ---
 if (
   !isNaN(ordinary_class.school_year) &&
   typeof $route.params.address == "string" &&

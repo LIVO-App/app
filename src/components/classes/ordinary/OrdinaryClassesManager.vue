@@ -1,4 +1,5 @@
 <template>
+  <!-- Date picker modal: for birth date selection -->
   <ion-modal :keep-contents-mounted="true">
     <ion-datetime
       :key="trigger"
@@ -13,6 +14,7 @@
       :value="null"
     />
   </ion-modal>
+  <!-- Ordinary classes modal: create and add multiple ordinary classes -->
   <ion-modal
     id="ordinary_classes"
     :is-open="ordinary_classes_open"
@@ -43,6 +45,7 @@
       @confirm="sendData('ordinary_classes')"
       @close="closeModal('ordinary_classes')"
     >
+      <!-- Input parameters: school year, study address, study year -->
       <template v-slot:parameters>
         <ionic-element v-model:element="elements.school_year" />
         <custom-select
@@ -74,6 +77,7 @@
       </template>
     </simple-adder>
   </ion-modal>
+  <!-- Teachers/Students modal: add multiple teachers or students -->
   <ion-modal
     id="teachers_students"
     :is-open="teachers_open || students_open"
@@ -104,12 +108,14 @@
       @confirm="sendData(teachers_open ? 'teachers' : 'students')"
       @close="closeModal(teachers_open ? 'teachers' : 'students')"
     >
+      <!-- Input parameters: personal information (name, surname, email, etc.) -->
       <template v-slot:parameters>
         <ionic-element v-model:element="elements.name" />
         <ionic-element v-model:element="elements.surname" />
         <ionic-element v-model:element="elements.email" />
         <ionic-element v-model:element="elements.cf" />
         <ionic-element v-model:element="elements.address" />
+        <!-- Gender selector and birth date picker -->
         <ion-grid>
           <ion-row class="ion-align-items-center">
             <ion-col size="6">
@@ -144,6 +150,7 @@
       </template>
     </simple-adder>
   </ion-modal>
+  <!-- Action buttons: trigger modals for adding classes, teachers, or students -->
   <ionic-element
     :element="
       getCustomMessage(
@@ -165,6 +172,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName OrdinaryClassesManager
+ * @description
+ * Admin utility component that manages **ordinary classes** creation and population.
+ *
+ * It provides modals to:
+ * - create one or more ordinary classes for a selected school year / study address,
+ * - add teachers or students to existing classes,
+ * - validate inputs and submit the resulting payloads to the backend.
+ */
 import {
   CustomElement,
   Gender,
@@ -203,6 +220,9 @@ type paramElement = {
   map_fn?: (v: string) => any;
 };
 
+/**
+ * Setup and open the specified modal based on the event.
+ */
 const setupModalAndOpen = async () => {
   const window: availableModal = store.state.event.event;
 
@@ -218,6 +238,11 @@ const setupModalAndOpen = async () => {
       break;
   }
 };
+
+/**
+ * Close the specified modal and reset its associated data.
+ * @param window - Type of modal to close
+ */
 const closeModal = (window: availableModal) => {
   resetLists();
   switch (window) {
@@ -235,6 +260,12 @@ const closeModal = (window: availableModal) => {
       break;
   }
 };
+
+/**
+ * Add a new row to the specified list after validation.
+ * Creates a card element with the entered data.
+ * @param window - Type of data to add (ordinary_classes, teachers, or students)
+ */
 const addRow = (window: availableModal) => {
   let data: OrderedCardsList<GeneralCardElements>;
 
@@ -438,6 +469,11 @@ const addRow = (window: availableModal) => {
   }
   trigger.value++;
 };
+
+/**
+ * Remove a row from the specified list based on event data.
+ * @param window - Type of data list to remove from
+ */
 const removeRow = (window: availableModal) => {
   let data: OrderedCardsList<GeneralCardElements>, id_key: string;
   if (window === "ordinary_classes") {
@@ -456,6 +492,12 @@ const removeRow = (window: availableModal) => {
   );
   trigger.value++;
 };
+
+/**
+ * Send the collected data to the backend via POST request.
+ * Handles success/error responses and updates UI accordingly.
+ * @param window - Type of data to send
+ */
 const sendData = (window: availableModal) => {
   let data: OrderedCardsList<GeneralCardElements>;
 
@@ -567,8 +609,20 @@ const sendData = (window: availableModal) => {
     }
   );
 };
+
+/**
+ * Convert study address object to localized string.
+ * @param study_address - The study address object
+ * @returns Localized title string
+ */
 const studyAddressToString = (study_address: StudyAddress) =>
   study_address[`${language}_title`];
+
+/**
+ * Create a text input element with label and styling.
+ * @param key - The element key/id
+ * @returns CustomElement configured as text input
+ */
 const getStringInput: (key: string) => CustomElement = (key: string) => ({
   id: key,
   type: "input",
@@ -582,10 +636,22 @@ const getStringInput: (key: string) => CustomElement = (key: string) => ({
     },
   },
 });
+
+/**
+ * Extract value from a "label: value" formatted string.
+ * @param content - The formatted string
+ * @returns The extracted value or undefined if value is "-"
+ */
 const getValueNoTitle = (content: string) => {
   const value = content.split(": ")[1];
   return value != "-" ? value : undefined;
 };
+
+/**
+ * Handle date change from date picker.
+ * Validates that selected date is not in the future.
+ * @param event - DateTime change event
+ */
 const changeData = (event: DatetimeCustomEvent) => {
   const tmp_str_date = event.target.value;
 
@@ -602,6 +668,10 @@ const changeData = (event: DatetimeCustomEvent) => {
     birth_date = undefined;
   }
 };
+
+/**
+ * Reset all person-related input parameters to default values.
+ */
 const resetPeopleParams = () => {
   elements.name.content = "";
   elements.surname.content = "";
@@ -611,11 +681,19 @@ const resetPeopleParams = () => {
   birth_date = undefined;
   elements.address.content = "";
 };
+
+/**
+ * Reset all class-related input parameters to default values.
+ */
 const resetClassParams = () => {
   elements.school_year.content = new Date().getFullYear();
   selected_study_address.value = "";
   selected_study_year.value = 0;
 };
+
+/**
+ * Reset all data lists (ordinary classes, teachers, students).
+ */
 const resetLists = () => {
   ordinary_classes_data.cards[""] = [];
   teachers_data.cards[""] = [];
@@ -803,6 +881,7 @@ const today = new Date();
 
 let birth_date: Date | undefined = undefined;
 
+// --- Initialization: load study addresses and configure study years ---
 await executeLink(
   "/v1/study_addresses",
   (response) => {

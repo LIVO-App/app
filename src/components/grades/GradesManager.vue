@@ -1,4 +1,5 @@
 <template>
+  <!-- Hidden datetime modal used by IonDatetimeButton (kept mounted to preserve state). -->
   <ion-modal :keep-contents-mounted="true">
     <ion-datetime
       :key="edit_trigger"
@@ -13,6 +14,8 @@
       :value="date_value"
     />
   </ion-modal>
+
+  <!-- Modal header: title + close action. -->
   <ion-header>
     <ion-toolbar>
       <ion-grid>
@@ -33,6 +36,8 @@
   <ion-content>
     <ion-grid class="ion-no-margin">
       <ion-row>
+
+        <!-- Left column: grades table (and mean). Width adapts when edit/insert panel is visible. -->
         <ion-col
           :key="
             actual_final_grade_index !== -1
@@ -49,6 +54,7 @@
               : '12'
           "
         >
+          <!-- Grades table: edit event enters edit mode, other events are delegated to parent. -->
           <ionic-table
             :key="store.state.triggers.grades"
             :emptiness_message="
@@ -91,6 +97,8 @@
             >
           </div>
         </ion-col>
+
+        <!-- Right column: grade insertion/edit form (shown only when teacher can edit or edit_mode is active). -->
         <ion-col
           :key="edit_trigger + '_parameters'"
           size="12"
@@ -104,6 +112,7 @@
         >
           <div class="ion-padding-bottom">
             <div class="ion-padding-bottom">
+              <!-- Panel title changes between insertion and edit. -->
               <ionic-element
                 :element="
                   getCustomMessage(
@@ -118,6 +127,7 @@
               />
             </div>
             <div>
+              <!-- Multilingual description for the grade. -->
               <ionic-element
                 :element="
                   getCustomMessage(
@@ -145,6 +155,7 @@
               style="border-bottom: 1px solid var(--ion-color-medium)"
             />
             <div>
+              <!-- Date selector (IonDatetimeButton opens the hidden datetime modal). -->
               <ion-item style="width: fit-content" lines="none">
                 <ion-label
                   :aria-label="getCurrentElement('date')"
@@ -158,6 +169,7 @@
                   class="ion-padding-start"
                 />
               </ion-item>
+              <!-- Grade input with typing validation guards. -->
               <ion-input
                 type="number"
                 v-model="grade"
@@ -182,6 +194,7 @@
                   }
                 "
               />
+              <!-- Final grade checkbox (disabled in edit mode). -->
               <div style="width: fit-content">
                 <ion-label
                   position="floating"
@@ -202,6 +215,7 @@
           </div>
           <div class="ion-text-center">
             <template v-if="edit_mode">
+              <!-- Edit flow: build a new Grade instance and emit signal_event to persist it. -->
               <ion-button
                 @click="() => {
                   let actual_grade = checkGradeParameters(descriptions, date, grade);
@@ -210,7 +224,7 @@
                   if (actual_grade != undefined) {
                     grade_props = {
                       id: store.state.event.data.id,
-                      publication: date != undefined ? date.toISOString() : (date_value ?? to_edit.publication.toISOString()),
+                      publication: date != undefined ? (date as Date).toISOString() : (date_value ?? (to_edit.publication as Date).toISOString()),
                       italian_description: '',
                       english_description: '',
                       grade: actual_grade,
@@ -224,10 +238,12 @@
               >
                 {{ getCurrentElement("edit") }}
               </ion-button>
+              <!-- Cancel edit and reset the form. -->
               <ion-button @click="setupEditMode(true)">
                 {{ getCurrentElement("cancel") }}
               </ion-button>
             </template>
+            <!-- Insertion flow: write event payload into Vuex and ask parent to execute it. -->
             <ion-button
               v-else
               @click="
@@ -245,7 +261,7 @@
                         ...parameters,
                         ...descriptions,
                         publication_date:
-                          date != undefined ? date.toISOString() : undefined,
+                          date != undefined ? (date as Date).toISOString() : undefined,
                         grade: actual_grade,
                         final: final,
                       },
@@ -269,6 +285,17 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName GradesManager
+ * @description
+ * Modal component that displays and manages a student's **grades list**.
+ *
+ * Depending on permissions and editable state, it supports:
+ * - loading grades from backend,
+ * - inserting a new grade,
+ * - editing/removing existing grades,
+ * while keeping the table view and insertion/edit form in sync.
+ */
 import {
   CustomElement,
   EditableState,
@@ -314,6 +341,13 @@ import {
 import { PropType, reactive, Ref, ref, watch } from "vue";
 import { useStore } from "vuex";
 
+/**
+ * Update the local `date` value from the Ionic datetime component.
+ *
+ * Clears the date when:
+ * - the picker is cleared, or
+ * - the chosen datetime is beyond end-of-day.
+ */
 const changeData = (event: DatetimeCustomEvent) => {
   const tmp_str_date = event.target.value;
 
@@ -330,6 +364,15 @@ const changeData = (event: DatetimeCustomEvent) => {
     date = undefined;
   }
 };
+
+/**
+ * Populate the table with grades and compute the intermediate arithmetic mean.
+ *
+ * If `props.grades` is provided, uses it as source; otherwise fetches from backend.
+ * Also configures table columns depending on permissions and editable status.
+ *
+ * @param empty When true resets edit state and clears the edit form.
+ */
 const setGradesTable = async (empty = true) => {
   let tmp_mean = 0;
 
@@ -421,6 +464,12 @@ const setGradesTable = async (empty = true) => {
     column_sizes = ["6", "3", "3"];
   }
 };
+
+/**
+ * Enter/exit edit mode and (re)initialize the form fields.
+ *
+ * @param empty When true clears fields and exits edit mode; otherwise loads the selected grade.
+ */
 const setupEditMode = (empty = false) => {
   to_edit =
     actual_grades[
@@ -526,10 +575,14 @@ let date_value: string | undefined;
 let to_edit: Grade;
 
 await setGradesTable();
+
+// Refresh table when an external trigger updates the grade list.
 watch(
   () => store.state.triggers.grades,
   () => setGradesTable()
 );
+
+// Refresh table and reset the form when entering/leaving edit-grades mode.
 watch(
   () => store.state.triggers.edit_grades,
   () => setGradesTable(true)

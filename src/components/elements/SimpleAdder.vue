@@ -59,6 +59,29 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName SimpleAdder
+ * @description
+ * Generic “add/remove rows + confirm” UI used by manager screens.
+ * Combines a parameter slot (top area), an add button, and a list/table of items with remove events.
+ *
+ * Rendering:
+ * - If `first_row` and `sizes` are provided, it uses `IonicTable`.
+ * - Otherwise it falls back to `ListCard`.
+ *
+ * @prop {string} title - Header title shown at the top.
+ * @prop {CustomElement} emptiness_message - Message shown when the list is empty.
+ * @prop {TableElement[]} [first_row] - Optional header row for the table layout.
+ * @prop {boolean} [show_confirm=true] - Whether to show the “Add” button above the list.
+ * @prop {(string[]|TmpList<TmpList<(string|undefined)[]>>)} [sizes] - Column sizes for the table layout.
+ * @prop {OrderedCardsList<GeneralCardElements>} data - Items to render.
+ *
+ * @event close - Triggered when the user clicks the close icon.
+ * @event add - Triggered when the user clicks “Add”.
+ * @event remove - Triggered by a child row/item removal action.
+ * @event confirm - Triggered when the user clicks “Confirm”.
+ */
+
 import {
   CustomElement,
   OrderedCardsList,

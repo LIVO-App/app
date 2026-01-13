@@ -1,4 +1,5 @@
 <template>
+  <!-- Main card wrapper with optional title/subtitle header -->
   <ion-card
     :color="getIonicColor(colors?.background)"
     :class="{
@@ -9,6 +10,7 @@
         getIonicColor(colors?.background) == undefined,
     }"
   >
+    <!-- Card header: optional title and subtitle -->
     <ion-card-header
       v-if="title != undefined"
       :class="getBreakpointClasses(classes?.header, breakpoint)"
@@ -20,10 +22,12 @@
         ><ionic-element v-model:element="subtitle_ref"
       /></ion-card-subtitle>
     </ion-card-header>
+    <!-- Card content: displays empty state, list, or grid based on data -->
     <ion-card-content
       style="overflow-y: auto"
       :class="getBreakpointClasses(classes?.content, breakpoint)"
     >
+      <!-- Empty state: display message when no cards available -->
       <template v-if="hasNoData(cards_list_ref)">
         <ion-item
           :color="getIonicColor(colors?.background)"
@@ -37,11 +41,13 @@
           <ionic-element v-model:element="emptiness_message_ref" />
         </ion-item>
       </template>
+      <!-- List layout: render cards in linear lists (when all columns = 1) -->
       <ion-list
         v-else-if="onlyLists()"
         class="ion-no-padding"
         :class="getBreakpointClasses(classes?.list, breakpoint)"
       >
+        <!-- Ungrouped cards: render directly without dividers -->
         <template v-if="cards_list_ref.cards[''] != undefined">
           <card-item
             v-for="(card, i) in cards_list_ref.cards['']"
@@ -53,6 +59,7 @@
             @signal_event="$emit('signal_event')"
           />
         </template>
+        <!-- Grouped cards: render with dividers between groups -->
         <template v-else>
           <ion-item-group
             v-for="(ordered_cards, i) in cards_list_ref.order"
@@ -70,7 +77,9 @@
           </ion-item-group>
         </template>
       </ion-list>
+      <!-- Grid/mixed layout: render cards in grids (when columns > 1) -->
       <template v-else>
+        <!-- Ungrouped grid: render directly without dividers -->
         <cards-grid
           v-if="cards_list_ref.cards[''] != undefined"
           v-model:cards_list="cards_list_ref.cards['']"
@@ -80,11 +89,13 @@
           @execute_link="$emit('execute_link')"
           @signal_event="$emit('signal_event')"
         />
+        <!-- Grouped grid/list: iterate over card groups -->
         <template v-else>
           <template
             v-for="(ordered_cards, i) in cards_list_ref.order"
             :key="'group-' + ordered_cards.key"
           >
+            <!-- Single column group: render as list -->
             <ion-list
               v-if="
                 (typeof columns == 'number'
@@ -104,6 +115,7 @@
                 />
               </ion-item-group>
             </ion-list>
+            <!-- Multi-column group: render as grid with divider -->
             <template v-else>
               <ion-item-divider
                 :color="getIonicColor(colors?.dividers) ?? 'light'"
@@ -153,6 +165,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName ListCard
+ * @description
+ * “Main-structure” component that renders an `OrderedCardsList`.
+ * Supports list/grid and grouped sections with dividers, propagating events to parents.
+ */
+
 import {
   IonCard,
   IonCardHeader,
@@ -199,9 +218,19 @@ import {
 import { getCssColor } from "../../utils";
 import { WatchStopHandle } from "vue";
 
+/**
+ * Merge specific card colors with general card colors.
+ * @param specific_colors - Card-specific color overrides
+ * @returns Merged color object
+ */
 const setSpecificColors = (
   specific_colors: Colors<CustomSubElements> | undefined
 ) => Object.assign(general_card_colors ?? {}, specific_colors);
+
+/**
+ * Check if all card groups should render as lists (columns = 1 for all).
+ * @returns true if all groups have single-column layout
+ */
 const onlyLists = () => {
   const groups = Object.keys(props.columns);
 
@@ -223,10 +252,19 @@ const onlyLists = () => {
 
   return is_list;
 };
+
+/**
+ * Check if cards_list needs v-model watchers (if any element is editable).
+ * @returns true if titles or cards can use v-model
+ */
 const checkVModel = () =>
   props.cards_list.order.find((order_element) =>
     canVModel(order_element.title)
   ) != undefined || canCardListVModel(props.cards_list.cards);
+
+/**
+ * Set up watchers to sync cards_list_ref with props.cards_list (for v-model).
+ */
 const addListeners = () => {
   watch(
     () => props.cards_list,
@@ -241,10 +279,15 @@ const addListeners = () => {
     }
   );
 };
+
+/**
+ * Update the current breakpoint on window resize.
+ */
 const updateBreakpoint = () => {
   breakpoint.value = getBreakpoint(window.innerWidth);
 };
 
+// --- Component props and emit setup ---
 const props = defineProps({
   title: Object as PropType<CustomElement>,
   subtitle: Object as PropType<CustomElement>,
@@ -306,6 +349,8 @@ let tmp_card;
 let tmp_color: ColorObject | undefined = undefined;
 let stopWatch: WatchStopHandle;
 
+// --- Color adjustments: apply parent colors to child elements ---
+// Adjust title color
 if (props.title != undefined && title_ref.value != undefined) {
   if (title_ref.value.colors == undefined) {
     title_ref.value.colors = {};
@@ -315,6 +360,7 @@ if (props.title != undefined && title_ref.value != undefined) {
     props.colors?.text
   );
 }
+// Adjust subtitle color
 if (props.subtitle != undefined && subtitle_ref.value != undefined) {
   if (subtitle_ref.value.colors == undefined) {
     subtitle_ref.value.colors = {};
@@ -324,6 +370,7 @@ if (props.subtitle != undefined && subtitle_ref.value != undefined) {
     props.colors?.text
   );
 }
+// Adjust emptiness message color and classes
 if (emptiness_message_ref.value.colors == undefined) {
   emptiness_message_ref.value.colors = {};
 }
@@ -338,6 +385,7 @@ emptiness_message_ref.value.classes.label = {
   "ion-text-wrap": true,
   "ion-text-center": true,
 };
+// Adjust divider title classes
 for (const card_group of cards_list_ref.value.order) {
   if (card_group.title.classes == undefined) {
     card_group.title.classes = {};
@@ -348,6 +396,7 @@ for (const card_group of cards_list_ref.value.order) {
   };
 }
 
+// Adjust colors for all cards in all groups
 for (const group in groups) {
   for (const card in cards_list_ref.value.cards[groups[group]]) {
     tmp_card = cards_list_ref.value.cards[groups[group]][card];
@@ -417,6 +466,7 @@ for (const group in groups) {
     }
   }
 }
+// Adjust divider title colors for ordered groups
 for (const ordered_cards of cards_list_ref.value.order) {
   tmp_color = adjustColor(
     ordered_cards.title.colors?.text,

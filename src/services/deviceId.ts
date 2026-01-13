@@ -1,14 +1,17 @@
 /**
- * Device ID Service
- * Generates unique device identifiers for authentication
+ * Device ID service.
+ *
+ * Generates unique device identifiers used in authentication flows.
+ * - On mobile: uses a native ID via Capacitor Device.
+ * - On web: generates a “stable” fingerprint based on browser characteristics.
  */
 
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
 
 /**
- * Generate a unique device identifier
- * Format: {userId}_{userType}_{deviceUuid}
+ * Generates a unique “user+device” identifier.
+ * Format: `{userId}_{userType}_{deviceUuid}`.
  */
 export async function generateDeviceId(
   userId: number,
@@ -19,9 +22,9 @@ export async function generateDeviceId(
 }
 
 /**
- * Get unique device UUID
- * - Mobile: Use native device UUID
- * - Web: Generate browser fingerprint
+ * Returns a device UUID.
+ * - Mobile: uses a native identifier.
+ * - Web: generates a browser fingerprint.
  */
 export async function getDeviceUuid(): Promise<string> {
   if (Capacitor.isNativePlatform()) {
@@ -39,8 +42,8 @@ export async function getDeviceUuid(): Promise<string> {
 }
 
 /**
- * Generate browser fingerprint based on browser characteristics
- * More stable than random ID, persists across sessions
+ * Generates a browser fingerprint.
+ * More stable than a random ID: it tends to persist across sessions.
  */
 function generateBrowserFingerprint(): string {
   // Collect browser characteristics
@@ -56,7 +59,7 @@ function generateBrowserFingerprint(): string {
 }
 
 /**
- * Simple hash function (FNV-1a)
+ * Simple hash (FNV-1a style) to reduce a string to a short id.
  */
 function hashString(str: string): string {
   let hash = 2166136261; // FNV offset basis
@@ -69,7 +72,7 @@ function hashString(str: string): string {
 }
 
 /**
- * Get device information for logging/debugging
+ * Returns device information (useful for debug/logging).
  */
 export async function getDeviceInfo(): Promise<{
   model: string;
@@ -109,7 +112,7 @@ export async function getDeviceInfo(): Promise<{
 }
 
 /**
- * Get a human-readable device name
+ * Human-readable device/browser name.
  */
 export async function getDeviceName(): Promise<string> {
   if (Capacitor.isNativePlatform()) {

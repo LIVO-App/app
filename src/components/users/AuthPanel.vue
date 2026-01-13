@@ -5,6 +5,7 @@
         <ion-card-title>{{ getCurrentElement(login_type) }}</ion-card-title>
       </ion-card-header>-->
       <ion-card-content>
+        <!-- Credentials form: rendered based on the selected login type. -->
         <template v-if="login_type == 'student'">
           <ion-item>
             <ion-input
@@ -53,6 +54,8 @@
             ></ion-input>
           </ion-item>
         </template>
+
+        <!-- Submit: captures current inputs and notifies the parent via `login` event. -->
         <ion-button
           @click="
             takeParameters();
@@ -65,6 +68,8 @@
           class="ion-margin-vertical"
           >{{ getCurrentElement("login") }}</ion-button
         >
+
+        <!-- Quick switch between user types (keeps the UI in a single panel). -->
         <div style="border-top: 1px solid var(--ion-color-dark)">
           <ion-grid>
             <ion-row>
@@ -101,6 +106,8 @@
             </ion-row>
           </ion-grid>
         </div>
+
+        <!-- Alternative authentication flows (e.g. Google OAuth). -->
         <div class="divider">
           <ionic-element :element="or" />
         </div>
@@ -135,6 +142,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * @displayName AuthPanel
+ * @description
+ * Login form (student/teacher/admin) with Google OAuth alternative.
+ *
+ * Emits:
+ * - `login`: parent executes the backend call and manages the session.
+ * - `execute_link`: used to start external flows (e.g. Google).
+ */
+
 import { getDeviceUuid } from "@/services/deviceId";
 import { CustomElement, TmpList, UserType } from "@/types";
 import { getCurrentElement, getCustomMessage, getIcon } from "@/utils";
@@ -153,6 +170,11 @@ import {
 import { reactive, Ref, ref } from "vue";
 import { useStore } from "vuex";
 
+/**
+ * Switches the active login type (student/teacher/admin).
+ *
+ * The template reacts by showing the corresponding credentials inputs.
+ */
 const changeType = (type: UserType) => {
   /*for (const key in user_information[login_type.value]) {
     if (user_information[type] != undefined) {
@@ -162,6 +184,10 @@ const changeType = (type: UserType) => {
   }*/
   login_type.value = type;
 };
+
+/**
+ * Copies the form parameters into `actual_params` and resets the fields.
+ */
 const takeParameters = () => {
   for (const info of user_information[login_type.value]) {
     actual_params[info] = params[info];
@@ -175,6 +201,10 @@ defineEmits(["login", "execute_link"]);
 const store = useStore();
 
 const login_type: Ref<UserType> = ref("student");
+
+/**
+ * List of required fields per user type.
+ */
 const user_information: {
   [key in keyof string as UserType]: string[];
 } = {
@@ -186,6 +216,10 @@ const params: TmpList<any> = reactive({
   username: "",
   password: "",
 });
+
+/**
+ * Parameters to send to the backend; includes a device id.
+ */
 const actual_params: TmpList<any> = {
   device_uuid: await getDeviceUuid(),
 };
